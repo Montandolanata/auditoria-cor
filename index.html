@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#D14B3D">
+<title>Auditoría Cor Outsourcing</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --cor:#D14B3D;
+    --cor-dark:#A93A2F;
+    --cor-soft:#FCEFEC;
+    --bg:#F6F6F4;
+    --card:#FFFFFF;
+    --text:#1f2024;
+    --muted:#6b6f76;
+    --border:#E3E3DF;
+    --ok:#1f9d55;
+    --no:#d83b3b;
+    --na:#8a8f97;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.4}
+  header.app{position:sticky;top:0;background:var(--cor);color:white;padding:env(safe-area-inset-top) 14px 12px;z-index:10;box-shadow:0 1px 6px rgba(0,0,0,.15)}
+  header.app .row{display:flex;align-items:center;justify-content:space-between;padding-top:10px}
+  header.app h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.3px}
+  header.app small{display:block;opacity:.85;font-size:11px;text-transform:uppercase;letter-spacing:1.2px}
+  .iconbtn{background:rgba(255,255,255,.18);border:0;color:white;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+  .iconbtn:active{background:rgba(255,255,255,.32)}
+  main{padding:14px 14px 110px;max-width:780px;margin:0 auto}
+  .view{display:none}
+  .view.active{display:block}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .card h2{margin:0 0 10px;font-size:15px;color:var(--cor-dark);text-transform:uppercase;letter-spacing:.8px;font-weight:700;border-bottom:2px solid var(--cor-soft);padding-bottom:8px}
+  .card h2 .num{display:inline-block;background:var(--cor);color:#fff;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;font-size:13px;margin-right:8px;vertical-align:middle}
+  label{display:block;font-weight:600;margin-bottom:4px;font-size:13px;color:var(--muted)}
+  input[type=text],input[type=date],input[type=time],textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;background:#fff;color:var(--text)}
+  textarea{resize:vertical;min-height:60px}
+  input:focus,textarea:focus{outline:2px solid var(--cor);outline-offset:-1px;border-color:var(--cor)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid2 > div{min-width:0}
+  .item{padding:12px 0;border-top:1px solid var(--border)}
+  .item:first-of-type{border-top:0;padding-top:4px}
+  .item-title{font-weight:600;font-size:14.5px;margin-bottom:8px;color:var(--text)}
+  .item-title strong{color:var(--cor-dark)}
+  .radios{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .radios label{margin:0;cursor:pointer;font-weight:600;font-size:13px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--muted);display:inline-flex;align-items:center;gap:5px;transition:all .12s}
+  .radios input{display:none}
+  .radios label:has(input:checked){color:#fff;border-color:transparent}
+  .radios label.si:has(input:checked){background:var(--ok)}
+  .radios label.no:has(input:checked){background:var(--no)}
+  .radios label.na:has(input:checked){background:var(--na)}
+  .obs{margin-top:6px}
+  .obs textarea{min-height:44px;font-size:14px}
+  .photos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center}
+  .photo{position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:#000}
+  .photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .photo button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:0;width:20px;height:20px;border-radius:50%;font-size:13px;line-height:18px;cursor:pointer;padding:0}
+  .addphoto{width:64px;height:64px;border:2px dashed var(--cor);border-radius:8px;background:var(--cor-soft);color:var(--cor);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .addphoto input{display:none}
+  .actionbar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:20;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
+  .actionbar button{flex:1;padding:13px;border-radius:10px;border:0;font-weight:700;font-size:14px;cursor:pointer}
+  .btn-primary{background:var(--cor);color:white}
+  .btn-primary:active{background:var(--cor-dark)}
+  .btn-secondary{background:#fff;color:var(--cor);border:1.5px solid var(--cor)!important}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)!important}
+  .progress{height:6px;background:var(--border);border-radius:99px;margin-top:10px;overflow:hidden}
+  .progress > div{height:100%;background:var(--cor);width:0;transition:width .2s}
+  .stat{display:flex;justify-content:space-around;gap:8px;margin-top:10px;font-size:13px}
+  .stat .pill{flex:1;text-align:center;padding:8px;border-radius:10px;background:var(--bg)}
+  .stat .pill b{display:block;font-size:18px;color:var(--cor-dark)}
+  .home-hero{text-align:center;padding:24px 12px 8px}
+  .home-hero .logo{width:64px;height:64px;background:var(--cor);color:#fff;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:24px;letter-spacing:1px;box-shadow:0 4px 12px rgba(209,75,61,.35)}
+  .home-hero h2{font-size:22px;margin:14px 0 4px;border:0;color:var(--text);text-transform:none;letter-spacing:0}
+  .home-hero p{color:var(--muted);margin:0 0 20px}
+  .menu-card{display:flex;align-items:center;gap:14px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:transform .08s}
+  .menu-card:active{transform:scale(.98)}
+  .menu-card .ic{width:44px;height:44px;background:var(--cor-soft);color:var(--cor);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .menu-card .body{flex:1;min-width:0}
+  .menu-card .body b{display:block;font-size:15px}
+  .menu-card .body span{color:var(--muted);font-size:13px}
+  .menu-card .arrow{color:var(--muted);font-size:20px}
+  .empty{text-align:center;color:var(--muted);padding:40px 20px}
+  .empty .ic{font-size:42px;margin-bottom:8px}
+  .history-item{display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer}
+  .history-item:active{background:var(--bg)}
+  .history-item .date{font-weight:700;font-size:14px}
+  .history-item .meta{color:var(--muted);font-size:12px;margin-top:2px}
+  .history-item .badge{margin-left:auto;background:var(--cor-soft);color:var(--cor-dark);padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700}
+  .sig-wrap{border:1px dashed var(--cor);border-radius:10px;background:#fff;height:140px;position:relative;overflow:hidden}
+  .sig-wrap canvas{width:100%;height:100%;display:block;touch-action:none}
+  .sig-wrap .sig-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:13px;pointer-events:none}
+  .sig-wrap.has-sign .sig-hint{display:none}
+  .sig-actions{margin-top:6px;display:flex;justify-content:flex-end}
+  .sig-actions button{background:transparent;border:0;color:var(--cor);font-weight:600;font-size:13px;cursor:pointer;padding:6px 10px}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1f2024;color:#fff;padding:11px 18px;border-radius:99px;font-size:13.5px;z-index:50;opacity:0;transition:opacity .2s, bottom .2s;pointer-events:none;max-width:90%;text-align:center}
+  .toast.show{opacity:1;bottom:90px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;z-index:60}
+  .modal.show{display:flex}
+  .modal .sheet{background:#fff;width:100%;border-radius:18px 18px 0 0;padding:18px;max-height:80vh;overflow:auto}
+  .modal .sheet h3{margin:0 0 10px}
+  .modal .sheet .actions{display:flex;gap:8px;margin-top:14px}
+  .modal .sheet .actions button{flex:1;padding:12px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
+  .summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+  .summary-row:last-child{border-bottom:0}
+  .summary-row .v{font-weight:700;color:var(--cor-dark)}
+  .branding{text-align:center;color:var(--muted);font-size:11px;margin-top:18px;padding-bottom:6px}
+  .branding b{color:var(--cor-dark)}
+  @media (min-width:680px){
+    main{padding:20px 20px 110px}
+    .home-hero .logo{width:80px;height:80px;font-size:28px}
+  }
+</style>
+</head>
+<body>
+
+<header class="app">
+  <small id="hdr-sub">Cor Outsourcing</small>
+  <div class="row">
+    <h1 id="hdr-title">Auditoría Operativa</h1>
+    <button class="iconbtn" id="btn-back" style="display:none">‹ Atrás</button>
+  </div>
+</header>
+
+<main>
+
+<!-- VISTA: HOME -->
+<section id="view-home" class="view active">
+  <div class="home-hero">
+    <div class="logo">cor</div>
+    <h2>Auditoría Operativa<br>y Rentabilidad</h2>
+    <p>Hotel Puerta de Bilbao · Cor Outsourcing</p>
+  </div>
+
+  <div class="menu-card" data-go="audit">
+    <div class="ic">+</div>
+    <div class="body"><b>Nueva auditoría</b><span>Empezar el checklist completo</span></div>
+    <div class="arrow">›</div>
+  </div>
+  <div class="menu-card" data-go="history">
+    <div class="ic">⌛</div>
+    <div class="body"><b>Histórico</b><span id="history-count">Sin auditorías guardadas</span></div>
+    <div class="arrow">›</div>
+  </div>
+  <div class="menu-card" data-go="info">
+    <div class="ic">i</div>
+    <div class="body"><b>Cómo instalar y usar</b><span>Guía rápida de la app</span></div>
+    <div class="arrow">›</div>
+  </div>
+
+  <div class="branding">v1.0 · <b>Cor Outsourcing</b> · uso interno</div>
+</section>
+
+<!-- VISTA: AUDITORÍA -->
+<section id="view-audit" class="view">
+  <div class="card">
+    <h2><span class="num">i</span>Datos de la auditoría</h2>
+    <div class="grid2">
+      <div>
+        <label>Hotel</label>
+        <input type="text" id="f-hotel" value="Hotel Puerta de Bilbao">
+      </div>
+      <div>
+        <label>Auditora</label>
+        <input type="text" id="f-auditor" value="María José Pozuelo">
+      </div>
+      <div>
+        <label>Fecha</label>
+        <input type="date" id="f-date">
+      </div>
+      <div>
+        <label>Hora inicio</label>
+        <input type="time" id="f-start">
+      </div>
+      <div>
+        <label>Hora fin</label>
+        <input type="time" id="f-end">
+      </div>
+      <div>
+        <label>Habitaciones revisadas</label>
+        <input type="text" id="f-rooms" placeholder="Ej: 201, 305, 412">
+      </div>
+    </div>
+    <div class="progress"><div id="prog-bar"></div></div>
+    <div class="stat">
+      <div class="pill"><b id="stat-si">0</b>SÍ</div>
+      <div class="pill"><b id="stat-no">0</b>NO</div>
+      <div class="pill"><b id="stat-na">0</b>N/A</div>
+      <div class="pill"><b id="stat-pend">--</b>Pendientes</div>
+    </div>
+  </div>
+
+  <div id="checklist-container"></div>
+
+  <div class="card">
+    <h2><span class="num">★</span>Plan de Acción / Puntos de Mejora</h2>
+    <textarea id="f-plan" placeholder="Anota aquí las acciones correctivas, observaciones generales y áreas detectadas para mejora..." style="min-height:120px"></textarea>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">✍</span>Firma de la auditora</h2>
+    <div class="sig-wrap" id="sig-wrap">
+      <canvas id="sig"></canvas>
+      <div class="sig-hint">Firme aquí con el dedo</div>
+    </div>
+    <div class="sig-actions">
+      <button id="btn-clear-sig" type="button">Borrar firma</button>
+    </div>
+  </div>
+
+  <div class="actionbar">
+    <button class="btn-ghost" id="btn-save">Guardar</button>
+    <button class="btn-secondary" id="btn-summary">Resumen</button>
+    <button class="btn-primary" id="btn-pdf">Generar PDF</button>
+  </div>
+</section>
+
+<!-- VISTA: HISTÓRICO -->
+<section id="view-history" class="view">
+  <div id="history-list"></div>
+</section>
+
+<!-- VISTA: INFO -->
+<section id="view-info" class="view">
+  <div class="card">
+    <h2><span class="num">?</span>Cómo usar la app</h2>
+    <p><b>1. Empezar la auditoría:</b> pulsa "Nueva auditoría" desde la pantalla principal. La fecha y la hora de inicio se rellenan solas.</p>
+    <p><b>2. Marcar cada ítem:</b> selecciona <b style="color:var(--ok)">SÍ</b>, <b style="color:var(--no)">NO</b> o <b>N/A</b>. Si encuentras una incidencia, añade la observación y adjunta una o varias fotos pulsando el botón "+".</p>
+    <p><b>3. Plan de acción:</b> al final hay un campo grande para anotar los puntos de mejora y la firma con el dedo.</p>
+    <p><b>4. Guardar:</b> pulsa "Guardar" en cualquier momento. Si cierras la app, lo retomas desde el Histórico.</p>
+    <p><b>5. Exportar PDF:</b> el botón "Generar PDF" crea el informe con el formato de Cor Outsourcing, listo para imprimir, enviar por WhatsApp o email.</p>
+  </div>
+  <div class="card">
+    <h2><span class="num">↓</span>Instalar como app</h2>
+    <p><b>Android (Chrome):</b> abre el menú (⋮) → "Instalar aplicación" / "Añadir a la pantalla de inicio".</p>
+    <p><b>iPhone (Safari):</b> botón Compartir → "Añadir a pantalla de inicio".</p>
+    <p>Una vez instalada funciona sin internet y se abre como una app normal.</p>
+  </div>
+</section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="modal-summary">
+  <div class="sheet">
+    <h3>Resumen de la auditoría</h3>
+    <div id="summary-content"></div>
+    <div class="actions">
+      <button class="btn-ghost" onclick="closeModal('modal-summary')">Cerrar</button>
+      <button class="btn-primary" id="btn-pdf-modal">Generar PDF</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+</script>
+</body>
+</html>
