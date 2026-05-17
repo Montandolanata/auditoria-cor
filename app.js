@@ -66,7 +66,7 @@ const CHECKLIST = [
 /* --------------------- Estado --------------------- */
 const state = {
   id: null,
-  data: null,  // se rellena en newAudit / load
+  data: null,
   view: 'home',
   dirty: false
 };
@@ -171,7 +171,7 @@ function emptyData(){
     rooms: '',
     plan: '',
     signature: null,
-    items: {}  // id -> { val:'si'|'no'|'na'|'', obs:'', photos:[dataURL,...] }
+    items: {}
   };
 }
 function newAudit(){
@@ -227,13 +227,11 @@ function renderForm(){
         </div>`;
       cont.appendChild(wrap);
 
-      // pintar previews ya cargadas
       v.photos.forEach((src, i) => {
         const img = wrap.querySelector(`img[data-pidx="${i}"]`);
         if(img) img.src = src;
       });
 
-      // listeners
       wrap.querySelectorAll('input[type=radio]').forEach(r => {
         r.addEventListener('change', () => { v.val = r.value; state.dirty=true; updateStats(); });
       });
@@ -243,7 +241,7 @@ function renderForm(){
         const dataUrl = await readAndResize(file, 1280, 0.72);
         v.photos.push(dataUrl);
         state.dirty = true;
-        renderForm(); // re-render para mostrar nueva foto
+        renderForm();
       });
       wrap.querySelectorAll('button[data-rm]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -257,14 +255,13 @@ function renderForm(){
     cont.appendChild(card);
   });
 
-  // firma — restaurar si existía
   setTimeout(()=>{ initSignature(); if(state.data.signature){ drawSignatureFromData(state.data.signature); } }, 50);
   updateStats();
 }
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-/* --------------------- Foto: redimensionar para no saturar el almacenamiento --------------------- */
+/* --------------------- Foto: redimensionar --------------------- */
 function readAndResize(file, maxDim, quality){
   return new Promise(resolve => {
     const r = new FileReader();
@@ -344,14 +341,13 @@ function drawSignatureFromData(dataUrl){
 }
 function clearSignature(){
   if(!sigCtx) return;
-  const rect = sigCanvas.getBoundingClientRect();
   sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);
   sigCanvas.parentElement.classList.remove('has-sign');
   state.data.signature = null;
   state.dirty = true;
 }
 
-/* --------------------- Lectura de la cabecera al guardar --------------------- */
+/* --------------------- Cabecera --------------------- */
 function syncHeader(){
   state.data.hotel   = $('#f-hotel').value;
   state.data.auditor = $('#f-auditor').value;
@@ -429,7 +425,6 @@ function showSummary(){
   openModal('modal-summary');
 }
 
-/* --------------------- Modal --------------------- */
 function openModal(id){ $('#'+id).classList.add('show'); }
 function closeModal(id){ $('#'+id).classList.remove('show'); }
 window.closeModal = closeModal;
@@ -450,7 +445,6 @@ async function generatePDF(){
   };
 
   const header = () => {
-    // Banda superior
     doc.setFillColor(COR); doc.rect(0,0,W,16,'F');
     doc.setTextColor('#FFF'); doc.setFont('helvetica','bold'); doc.setFontSize(13);
     doc.text('COR OUTSOURCING — Auditoría Operativa', M, 10);
@@ -469,11 +463,9 @@ async function generatePDF(){
 
   header();
 
-  // Cabecera con datos
   doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(COR);
   doc.text('AUDITORÍA OPERATIVA Y RENTABILIDAD', M, y); y += 6;
   doc.setTextColor(DARK); doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  const lineH = 5.5;
   const col = (W - 2*M) / 2;
   doc.setDrawColor(BORDER); doc.setLineWidth(0.2);
   doc.rect(M, y, W-2*M, 22);
@@ -489,7 +481,6 @@ async function generatePDF(){
   doc.setFont('helvetica','normal'); doc.text(state.data.rooms || '-', M+50, y+17);
   y += 26;
 
-  // Resumen
   let si=0,no=0,na=0,total=0;
   CHECKLIST.forEach(s => s.items.forEach(it => { total++; const v=state.data.items[it.id]?.val; if(v==='si')si++; else if(v==='no')no++; else if(v==='na')na++; }));
   const pct = (si+no) ? Math.round(si/(si+no)*100) : 0;
@@ -500,7 +491,6 @@ async function generatePDF(){
   doc.text(`SÍ: ${si}    NO: ${no}    N/A: ${na}    Pendientes: ${total-si-no-na}    Total: ${total}`, W-M-3, y+7.5, { align:'right' });
   y += 16;
 
-  // Secciones
   for(const sec of CHECKLIST){
     ensure(14);
     doc.setFillColor(COR); doc.rect(M, y, W-2*M, 7, 'F');
@@ -516,7 +506,6 @@ async function generatePDF(){
       const hRow = Math.max(6, split.length*4.4 + 1) + (v.obs ? 4 + doc.splitTextToSize(v.obs, W-2*M-6).length*3.8 : 0);
       ensure(hRow + 2);
 
-      // estado visual
       const stateColor = v.val==='si'? '#1f9d55' : v.val==='no'? '#d83b3b' : v.val==='na'? '#8a8f97' : '#dddddd';
       doc.setFillColor(stateColor); doc.circle(M+3, y+2.4, 1.8, 'F');
       doc.setFontSize(8); doc.setTextColor('#FFF'); doc.setFont('helvetica','bold');
@@ -525,7 +514,6 @@ async function generatePDF(){
       doc.setTextColor(DARK); doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
 
       doc.text(split, M+7, y+2.5);
-      // estado a la derecha
       doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
       doc.setTextColor(stateColor==='#dddddd'?MUTED:stateColor);
       doc.text(v.val ? v.val.toUpperCase() : '—', W-M-2, y+2.5, { align:'right' });
@@ -539,14 +527,12 @@ async function generatePDF(){
         cursor += obsSplit.length*3.8 + 1.5;
         doc.setTextColor(DARK); doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
       }
-      // fotos: si las hay, las anexamos al final del PDF para no romper la maquetación
       y = cursor + 2;
       doc.setDrawColor('#EEE'); doc.line(M, y, W-M, y); y += 1.5;
     }
     y += 2;
   }
 
-  // Plan de acción
   ensure(60);
   doc.setFillColor(COR); doc.rect(M, y, W-2*M, 7, 'F');
   doc.setTextColor('#FFF'); doc.setFont('helvetica','bold'); doc.setFontSize(10);
@@ -560,7 +546,6 @@ async function generatePDF(){
   }
   y += 74;
 
-  // Firma
   ensure(40);
   doc.setFont('helvetica','bold'); doc.setFontSize(10);
   doc.text('Auditora Operativa (Cor Outsourcing)', M, y+4);
@@ -571,7 +556,6 @@ async function generatePDF(){
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
   doc.text(state.data.auditor || 'María José Pozuelo', M, y+29);
 
-  // Anexo de fotos
   const fotos = [];
   CHECKLIST.forEach(sec => sec.items.forEach(it => {
     const v = state.data.items[it.id];
@@ -603,7 +587,6 @@ async function generatePDF(){
     }
   }
 
-  // pies de página en todas
   const pages = doc.internal.getNumberOfPages();
   for(let p=1;p<=pages;p++){ doc.setPage(p); footer(); }
 
@@ -632,20 +615,87 @@ function bindUI(){
   $('#btn-pdf-modal').addEventListener('click', () => { closeModal('modal-summary'); generatePDF(); });
   $('#btn-clear-sig').addEventListener('click', clearSignature);
 
-  // sync de cabecera en cada cambio
   ['f-hotel','f-auditor','f-date','f-start','f-end','f-rooms','f-plan'].forEach(id => {
     document.addEventListener('input', e => {
       if(e.target.id === id) state.dirty = true;
     });
   });
 
-  // antes de salir
   window.addEventListener('beforeunload', e => {
     if(state.dirty){ e.preventDefault(); e.returnValue=''; }
   });
 }
 
+/* --------------------- Autenticación (PIN) --------------------- */
+const AUTH = {
+  SALT: 'cor-audit-2026-bilbao',
+  HASH: '02f49db75af3173497b2ef11910a2aa949dab6ab83884da3f6f680bf8726c62f',
+  KEY:  'cor-audit-auth-v1'
+};
+
+async function sha256(text){
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function tryAuth(pwd){
+  const h = await sha256(AUTH.SALT + pwd);
+  return h === AUTH.HASH;
+}
+function isAuthed(){ return localStorage.getItem(AUTH.KEY) === AUTH.HASH; }
+function setAuthed(){ localStorage.setItem(AUTH.KEY, AUTH.HASH); }
+function logout(){ localStorage.removeItem(AUTH.KEY); showLock(); }
+
+function showLock(){
+  document.getElementById('view-lock').style.display = 'flex';
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('app-main').style.display = 'none';
+  setTimeout(() => document.getElementById('lock-input')?.focus(), 100);
+}
+function hideLock(){
+  document.getElementById('view-lock').style.display = 'none';
+  document.getElementById('app-header').style.display = '';
+  document.getElementById('app-main').style.display = '';
+}
+function bindLock(){
+  const form = document.getElementById('lock-form');
+  const input = document.getElementById('lock-input');
+  const err = document.getElementById('lock-error');
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const val = input.value.trim();
+    if(!val) return;
+    const ok = await tryAuth(val);
+    if(ok){
+      setAuthed();
+      err.innerHTML = '&nbsp;';
+      hideLock();
+      input.value = '';
+    } else {
+      err.textContent = 'Contraseña incorrecta';
+      input.value = '';
+      input.focus();
+      input.animate([
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-8px)' },
+        { transform: 'translateX(8px)' },
+        { transform: 'translateX(-4px)' },
+        { transform: 'translateX(0)' }
+      ], { duration: 280, easing: 'ease-out' });
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  bindLock();
+  if(isAuthed()){ hideLock(); } else { showLock(); }
   bindUI();
   refreshHistoryCount();
+
+  const lo = document.getElementById('btn-logout');
+  if(lo) lo.addEventListener('click', () => {
+    if(confirm('¿Cerrar sesión? Tendrás que volver a introducir la contraseña la próxima vez. Las auditorías guardadas no se borran.')){
+      logout();
+    }
+  });
 });

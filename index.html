@@ -119,7 +119,25 @@
 </head>
 <body>
 
-<header class="app">
+<!-- VISTA: BLOQUEO POR PIN -->
+<section id="view-lock" style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;padding:24px;background:linear-gradient(180deg, #D14B3D 0%, #A93A2F 100%);color:#fff;text-align:center;position:fixed;inset:0;z-index:100">
+  <div style="background:#fff;width:88px;height:88px;border-radius:20px;color:#D14B3D;font-weight:800;font-size:30px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 6px 20px rgba(0,0,0,.25)">cor</div>
+  <h2 style="margin:0 0 8px;font-size:22px;font-weight:700">Auditoría Cor Outsourcing</h2>
+  <p style="margin:0 0 28px;opacity:.92;font-size:14px">Introduce la contraseña para acceder</p>
+  <form id="lock-form" style="width:100%;max-width:280px">
+    <input type="password" id="lock-input" inputmode="text" autocomplete="off" autocapitalize="off"
+           style="width:100%;padding:14px 16px;border-radius:10px;border:0;font-size:18px;text-align:center;background:rgba(255,255,255,.95);color:#1f2024;letter-spacing:2px"
+           placeholder="contraseña">
+    <button type="submit"
+            style="width:100%;margin-top:12px;padding:14px;border-radius:10px;border:0;background:#fff;color:#D14B3D;font-weight:700;font-size:15px;cursor:pointer">
+      Entrar
+    </button>
+    <div id="lock-error" style="margin-top:14px;height:20px;font-size:13px;color:#FFD3CE">&nbsp;</div>
+  </form>
+  <p style="position:absolute;bottom:24px;font-size:11px;opacity:.7;letter-spacing:1px">USO INTERNO · COR OUTSOURCING</p>
+</section>
+
+<header class="app" id="app-header" style="display:none">
   <small id="hdr-sub">Cor Outsourcing</small>
   <div class="row">
     <h1 id="hdr-title">Auditoría Operativa</h1>
@@ -127,7 +145,7 @@
   </div>
 </header>
 
-<main>
+<main id="app-main" style="display:none">
 
 <!-- VISTA: HOME -->
 <section id="view-home" class="view active">
@@ -153,7 +171,7 @@
     <div class="arrow">›</div>
   </div>
 
-  <div class="branding">v1.0 · <b>Cor Outsourcing</b> · uso interno</div>
+  <div class="branding">v1.1 · <b>Cor Outsourcing</b> · uso interno</div>
 </section>
 
 <!-- VISTA: AUDITORÍA -->
@@ -241,6 +259,11 @@
     <p><b>iPhone (Safari):</b> botón Compartir → "Añadir a pantalla de inicio".</p>
     <p>Una vez instalada funciona sin internet y se abre como una app normal.</p>
   </div>
+  <div class="card">
+    <h2><span class="num">⎋</span>Cerrar sesión</h2>
+    <p>Si necesitas que la app vuelva a pedir la contraseña, pulsa el botón. <b>Esto no borra las auditorías guardadas</b>, solo el acceso.</p>
+    <button id="btn-logout" style="margin-top:6px;padding:11px 18px;border-radius:10px;border:1.5px solid var(--cor);background:#fff;color:var(--cor);font-weight:700;cursor:pointer">Cerrar sesión</button>
+  </div>
 </section>
 
 </main>
@@ -261,4 +284,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="app.js"></script>
 <script>
-  if('serviceWorker' in navig
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+</script>
+</body>
+</html>
