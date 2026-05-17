@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /
+
+# Esta aplicación es de uso interno de Cor Outsourcing.
+# No queremos que aparezca en buscadores.
