@@ -265,7 +265,7 @@ function renderForm(){
           ${v.photos.map((src,i)=>`<div class="photo"><img src="${src}" data-pidx="${i}"><button type="button" data-rm="${i}">×</button></div>`).join('')}
           <label class="addphoto" title="Añadir foto">+<input type="file" accept="image/*" capture="environment"></label>
         </div>`;
-      cont.appendChild(wrap);
+      card.appendChild(wrap);
 
       // listeners
       wrap.querySelectorAll('input[type=radio]').forEach(r => {
