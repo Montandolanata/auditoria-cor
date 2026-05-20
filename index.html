@@ -115,30 +115,175 @@
     main{padding:20px 20px 110px}
     .home-hero .logo{width:80px;height:80px;font-size:28px}
   }
+  
+  /* Estilos del PIN Pad */
+  .pin-display {
+    display: flex;
+    gap: 16px;
+    margin: 12px 0 15px;
+    justify-content: center;
+  }
+  .pin-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    background: transparent;
+    transition: all 0.12s ease;
+  }
+  .pin-dot.filled {
+    background: #fff;
+    border-color: #fff;
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  }
+  .pin-keyboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 20px;
+    width: 100%;
+    max-width: 260px;
+    margin: 0 auto;
+  }
+  .pin-key {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s ease;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 0 auto;
+  }
+  .pin-key:active {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.7);
+    transform: scale(0.93);
+  }
+  .pin-key.action {
+    background: transparent;
+    border-color: transparent;
+    font-size: 13px;
+    font-weight: normal;
+  }
+  .pin-key.action:active {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(0.93);
+  }
+  
+  /* Animación Shake en error de PIN */
+  .shake-anim {
+    animation: shake 0.3s ease-in-out;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+  }
+
+  /* Lightbox para ampliación de fotos */
+  .modal-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 16, 20, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    cursor: zoom-out;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+  }
+  .modal-lightbox.show {
+    display: flex;
+    opacity: 1;
+  }
+  .modal-lightbox img {
+    max-width: 95vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+    transform: scale(0.9);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .modal-lightbox.show img {
+    transform: scale(1);
+  }
+  .modal-lightbox .close-btn {
+    position: absolute;
+    top: calc(14px + env(safe-area-inset-top));
+    right: 20px;
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .modal-lightbox .close-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.25);
+  }
 </style>
 </head>
 <body>
 
 <!-- VISTA: BLOQUEO POR PIN -->
 <section id="view-lock" style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;padding:24px;background:linear-gradient(180deg, #D14B3D 0%, #A93A2F 100%);color:#fff;text-align:center;position:fixed;inset:0;z-index:100">
-  <div style="background:#fff;width:88px;height:88px;border-radius:20px;color:#D14B3D;font-weight:800;font-size:30px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 6px 20px rgba(0,0,0,.25)">cor</div>
-  <h2 style="margin:0 0 8px;font-size:22px;font-weight:700">Auditoría Cor Outsourcing</h2>
-  <p style="margin:0 0 28px;opacity:.92;font-size:14px">Introduce la contraseña para acceder</p>
-  <form id="lock-form" style="width:100%;max-width:280px">
-    <input type="password" id="lock-input" inputmode="text" autocomplete="off" autocapitalize="off"
-           style="width:100%;padding:14px 16px;border-radius:10px;border:0;font-size:18px;text-align:center;background:rgba(255,255,255,.95);color:#1f2024;letter-spacing:2px"
-           placeholder="contraseña">
-    <button type="submit"
-            style="width:100%;margin-top:12px;padding:14px;border-radius:10px;border:0;background:#fff;color:#D14B3D;font-weight:700;font-size:15px;cursor:pointer">
-      Entrar
-    </button>
-    <div id="lock-error" style="margin-top:14px;height:20px;font-size:13px;color:#FFD3CE">&nbsp;</div>
-  </form>
-  <p style="position:absolute;bottom:24px;font-size:11px;opacity:.7;letter-spacing:1px">USO INTERNO · COR OUTSOURCING</p>
+  <div style="background:#fff;width:80px;height:80px;border-radius:20px;color:#D14B3D;font-weight:800;font-size:28px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 6px 20px rgba(0,0,0,.2)">cor</div>
+  <h2 style="margin:0 0 4px;font-size:20px;font-weight:700">Auditoría Cor Outsourcing</h2>
+  <p style="margin:0 0 16px;opacity:.9;font-size:13.5px">Introduce tu PIN de 4 dígitos</p>
+  
+  <div class="pin-display" id="pin-display">
+    <div class="pin-dot" data-idx="0"></div>
+    <div class="pin-dot" data-idx="1"></div>
+    <div class="pin-dot" data-idx="2"></div>
+    <div class="pin-dot" data-idx="3"></div>
+  </div>
+
+  <div id="lock-error" style="margin-bottom:16px;height:18px;font-size:13px;color:#FFD3CE;font-weight:600">&nbsp;</div>
+
+  <div class="pin-keyboard" id="pin-keyboard">
+    <button type="button" class="pin-key" data-val="1">1</button>
+    <button type="button" class="pin-key" data-val="2">2</button>
+    <button type="button" class="pin-key" data-val="3">3</button>
+    <button type="button" class="pin-key" data-val="4">4</button>
+    <button type="button" class="pin-key" data-val="5">5</button>
+    <button type="button" class="pin-key" data-val="6">6</button>
+    <button type="button" class="pin-key" data-val="7">7</button>
+    <button type="button" class="pin-key" data-val="8">8</button>
+    <button type="button" class="pin-key" data-val="9">9</button>
+    <button type="button" class="pin-key action" data-action="clear" style="font-size:12px;text-transform:uppercase;letter-spacing:0.5px">Borrar</button>
+    <button type="button" class="pin-key" data-val="0">0</button>
+    <button type="button" class="pin-key action" data-action="backspace" style="font-size:18px">⌫</button>
+  </div>
+  
+  <p style="position:absolute;bottom:16px;font-size:10px;opacity:.6;letter-spacing:1px">USO INTERNO · COR OUTSOURCING</p>
 </section>
 
 <header class="app" id="app-header" style="display:none">
-  <small id="hdr-sub">Cor Outsourcing</small>
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <small id="hdr-sub">Cor Outsourcing</small>
+    <small id="autosave-status" style="font-size:10.5px;opacity:0.8;transition:opacity 0.3s;letter-spacing:0.5px;text-transform:none;color:#FFF;font-weight:600;"></small>
+  </div>
   <div class="row">
     <h1 id="hdr-title">Auditoría Operativa</h1>
     <button class="iconbtn" id="btn-back" style="display:none">‹ Atrás</button>
@@ -171,7 +316,7 @@
     <div class="arrow">›</div>
   </div>
 
-  <div class="branding">v1.1 · <b>Cor Outsourcing</b> · uso interno</div>
+  <div class="branding">v1.0 · <b>Cor Outsourcing</b> · uso interno</div>
 </section>
 
 <!-- VISTA: AUDITORÍA -->
@@ -279,6 +424,13 @@
       <button class="btn-primary" id="btn-pdf-modal">Generar PDF</button>
     </div>
   </div>
+</div>
+
+<!-- Ligtbox Modal para ampliar fotos -->
+<div class="modal-lightbox" id="modal-lightbox">
+  <div class="close-btn" id="lightbox-download" style="right: 76px; font-size: 20px; font-weight: bold;" title="Descargar imagen">↓</div>
+  <div class="close-btn">&times;</div>
+  <img id="lightbox-img" src="" alt="Imagen ampliada">
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
