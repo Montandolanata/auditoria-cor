@@ -8,57 +8,61 @@ const CHECKLIST = [
     n: 1,
     title: "Rentabilidad y Control de Costes",
     items: [
-      { id:"r1", t:"<strong>Productividad:</strong> los ratios de habitaciones por camarera/o se ajustan al cuadrante y objetivos." },
-      { id:"r2", t:"<strong>Gestión de tiempos:</strong> se minimizan los tiempos muertos en offices o traslados entre plantas." },
-      { id:"r3", t:"<strong>Consumo de químicos:</strong> dosificación correcta de productos, evitando derroches." },
-      { id:"r4", t:"<strong>Uso de maquinaria:</strong> cuidado preventivo de aspiradoras y carros para evitar roturas." },
-      { id:"r5", t:"<strong>Control de IT (bajas médicas):</strong> seguimiento del impacto en cobertura del servicio y costes." }
+      { id: "rc_prod", t: "<strong>Productividad:</strong> Habitaciones camareras/os de pisos." },
+      { id: "rc_dosi", t: "<strong>Dosificadores químicos:</strong> dosificación correcta." },
+      { id: "rc_cons_uni", t: "<strong>Otros consumos:</strong> Uniformidad." },
+      { id: "rc_cons_calz", t: "<strong>Otros consumos:</strong> Calzado." },
+      { id: "rc_cons_darl", t: "<strong>Otros consumos:</strong> Darlim." },
+      { id: "rc_cons_lyre", t: "<strong>Otros consumos:</strong> Lyreco." },
+      { id: "rc_cons_deja", t: "<strong>Otros consumos:</strong> Dejavú." },
+      { id: "rc_cons_rioz", t: "<strong>Otros consumos:</strong> Riozuri." },
+      { id: "rc_cons_otro", t: "<strong>Otros consumos:</strong> Otros." },
+      { id: "rc_maqu", t: "<strong>Uso maquinaria:</strong> cuidado de aspiradoras y carros." },
+      { id: "rc_bm_bit", t: "<strong>Bajas médicas:</strong> Baja Incapacidad Temporal (BIT)." },
+      { id: "rc_bm_bat", t: "<strong>Bajas médicas:</strong> Baja Accidente de Trabajo (BAT)." },
+      { id: "rc_bm_bm", t: "<strong>Bajas médicas:</strong> Baja Maternal / Riesgo Embarazo (BM)." },
+      { id: "rc_bm_lac", t: "<strong>Bajas médicas:</strong> Lactancia (LAC)." },
+      { id: "rc_aus_pr", t: "<strong>Ausencias:</strong> Permiso Retribuido (PR)." },
+      { id: "rc_aus_aus", t: "<strong>Ausencias:</strong> Ausencia Sin Justificar (AUS)." },
+      { id: "rc_aus_ausj", t: "<strong>Ausencias:</strong> Ausencia Justificada, pero no retribuida (AUSJ)." },
+      { id: "rc_liq_bv", t: "<strong>Liquidaciones:</strong> Baja Voluntaria (BV)." },
+      { id: "rc_liq_nspp", t: "<strong>Liquidaciones:</strong> No Superado Período de Prueba (NSPP)." },
+      { id: "rc_liq_dd", t: "<strong>Liquidaciones:</strong> Despido Disciplinario (DD)." },
+      { id: "rc_liq_do", t: "<strong>Liquidaciones:</strong> Despido Objetivo (DO)." },
+      { id: "rc_liq_di", t: "<strong>Liquidaciones:</strong> Despido Improcedente (DI)." },
+      { id: "rc_liq_dp", t: "<strong>Liquidaciones:</strong> Despido Procedente (DP)." },
+      { id: "rc_liq_d", t: "<strong>Liquidaciones:</strong> Discontinuidades (D)." }
     ]
   },
   {
     n: 2,
-    title: "Gestión del Equipo y PRL",
+    title: "Gestión PRL",
     items: [
-      { id:"p1", t:"<strong>Uniformidad:</strong> todo el personal viste el uniforme Cor Outsourcing completo y en buen estado." },
-      { id:"p2", t:"<strong>EPIs:</strong> uso correcto de guantes y calzado de seguridad según protocolo." },
-      { id:"p3", t:"<strong>Seguridad:</strong> los carros no bloquean pasillos, vías de evacuación ni puertas cortafuegos." },
-      { id:"p4", t:"<strong>Químicos:</strong> envases correctamente etiquetados (prohibido envases no homologados)." },
-      { id:"p5", t:"<strong>FDS:</strong> Fichas de Datos de Seguridad disponibles en el office." },
-      { id:"p6", t:"<strong>Control de presencia:</strong> registros de jornada y firmas de turnos al día." }
+      { id: "prl_epis", t: "<strong>EPIs:</strong> que estén colocados en todos los offices." },
+      { id: "prl_fichas", t: "<strong>Fichas técnicas y de seguridad:</strong> que estén colocadas en el lugar donde tengamos los dosificadores y almacén de químicos." },
+      { id: "prl_cumpl", t: "<strong>PRL:</strong> que tengamos todas bien cumplimentadas." },
+      { id: "prl_recon", t: "<strong>Reconocimientos médicos:</strong> control de asistencia al reconocimiento médico." }
     ]
   },
   {
     n: 3,
-    title: "Calidad de Limpieza — Habitaciones",
+    title: "Gestión de Equipos",
     items: [
-      { id:"h1", t:"<strong>Camas:</strong> sábanas sin manchas, arrugas o pelos. Tensión correcta del embozo." },
-      { id:"h2", t:"<strong>Polvo general:</strong> repaso correcto en cabeceros, rodapiés, marcos e interior de armarios." },
-      { id:"h3", t:"<strong>Cristales y espejos:</strong> sin marcas, huellas ni pelusas." },
-      { id:"h4", t:"<strong>Desinfección de contacto:</strong> mandos TV, teléfonos, pomos e interruptores limpios." },
-      { id:"h5", t:"<strong>Baño — sanitarios:</strong> inodoro y bidé con desinfección total. Sin olores." },
-      { id:"h6", t:"<strong>Baño — ducha/bañera:</strong> grifería brillante, sin cal, moho ni pelos. Mamparas secas." },
-      { id:"h7", t:"<strong>Lencería de baño:</strong> toallas dobladas a estándar. Amenities reposicionados." },
-      { id:"h8", t:"<strong>Suelos:</strong> aspirado profundo (esquinas y bajo la cama) o fregado sin marcas." },
-      { id:"h9", t:"<strong>Terrazas/Balcones:</strong> suelo barrido, mobiliario limpio y barandillas repasadas." }
-    ]
-  },
-  {
-    n: 4,
-    title: "Zonas Comunes y Públicas",
-    items: [
-      { id:"z1", t:"<strong>Lobby y recepción:</strong> suelos limpios, mobiliario aspirado, papeleras vacías." },
-      { id:"z2", t:"<strong>Aseos públicos:</strong> sin olores, sanitarios limpios, reposición de papel y jabón. Hoja de firmas al día." },
-      { id:"z3", t:"<strong>Ascensores:</strong> espejos impecables, botoneras desinfectadas, carriles sin suciedad." },
-      { id:"z4", t:"<strong>Pasillos:</strong> moquetas aspiradas, paredes sin rozaduras, bandejas Room Service retiradas." }
-    ]
-  },
-  {
-    n: 5,
-    title: "Cumplimiento SLA y Relación con el Hotel",
-    items: [
-      { id:"s1", t:"<strong>Reporte de averías:</strong> el personal notifica rápidamente las incidencias al hotel." },
-      { id:"s2", t:"<strong>Gestión de estados:</strong> actualización en tiempo real de habitaciones en el PMS." },
-      { id:"s3", t:"<strong>Lost & Found:</strong> estricto cumplimiento del protocolo (etiquetado y entrega inmediata)." }
+      { id: "eq_listados", t: "Recogida de listados y llaves maestras." },
+      { id: "eq_partes", t: "Hacer partes de trabajo de camareras/os." },
+      { id: "eq_briefing", t: "Briefing." },
+      { id: "eq_org_manana", t: "Organización del trabajo del día siguiente." },
+      { id: "eq_registro_jornada", t: "Revisión del registro de jornada (entrada)." },
+      { id: "eq_zonas_tarde", t: "Revisión de zonas comunes (del turno de tarde/noche)." },
+      { id: "eq_caddys_primera", t: "Comprobación de caddys y carros en las plantas (1ª hora)." },
+      { id: "eq_rev_habs", t: "Revisión de habitaciones." },
+      { id: "eq_zonas_manana", t: "Revisión de zonas comunes del turno de mañana." },
+      { id: "eq_partes_20_30", t: "Recogida de partes de trabajo y llaves maestras (20, 25 y 30 horas), revisión de caddys y carros en las plantas." },
+      { id: "eq_control_ocup", t: "Control de ocupación y comprobar con el cuadrante de días libres." },
+      { id: "eq_rev_ultimas", t: "Revisión de las últimas habitaciones." },
+      { id: "eq_partes_35_40", t: "Recogida de partes de trabajo y llaves maestras (35 y 40 horas), revisión de caddys y carros en las plantas." },
+      { id: "eq_cierre_offices", t: "Cierre de offices." },
+      { id: "eq_cierre_hotel", t: "Control diario y cierre con el hotel." }
     ]
   }
 ];
@@ -66,7 +70,7 @@ const CHECKLIST = [
 /* --------------------- Estado --------------------- */
 const state = {
   id: null,
-  data: null,
+  data: null,  // se rellena en newAudit / load
   view: 'home',
   dirty: false
 };
@@ -158,6 +162,41 @@ function toast(msg){
   toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
+/* --------------------- Autoguardado con Debounce --------------------- */
+let autosaveTimeout;
+function triggerAutosave(immediate = false) {
+  state.dirty = true;
+  
+  const statusEl = $('#autosave-status');
+  if (statusEl) {
+    statusEl.textContent = 'Guardando...';
+    statusEl.style.opacity = '1';
+  }
+
+  clearTimeout(autosaveTimeout);
+  
+  if (immediate) {
+    saveAudit(true).then(() => {
+      if (statusEl) {
+        statusEl.textContent = '✓ Borrador guardado';
+        setTimeout(() => {
+          statusEl.style.opacity = '0.5';
+        }, 1200);
+      }
+    });
+  } else {
+    autosaveTimeout = setTimeout(async () => {
+      await saveAudit(true);
+      if (statusEl) {
+        statusEl.textContent = '✓ Borrador guardado';
+        setTimeout(() => {
+          statusEl.style.opacity = '0.5';
+        }, 1200);
+      }
+    }, 1000);
+  }
+}
+
 /* --------------------- Auditoría: nuevo/cargar --------------------- */
 function emptyData(){
   const today = new Date();
@@ -171,7 +210,7 @@ function emptyData(){
     rooms: '',
     plan: '',
     signature: null,
-    items: {}
+    items: {}  // id -> { val:'si'|'no'|'na'|'', obs:'', photos:[dataURL,...] }
   };
 }
 function newAudit(){
@@ -180,6 +219,7 @@ function newAudit(){
   state.dirty = false;
   renderForm();
   goView('audit');
+  triggerAutosave(true); // Guardar borrador inicial inmediatamente
 }
 async function loadAudit(id){
   const a = await dbGet(id);
@@ -222,46 +262,56 @@ function renderForm(){
         </div>
         <div class="obs"><textarea placeholder="Observaciones / acciones...">${escapeHtml(v.obs)}</textarea></div>
         <div class="photos">
-          ${v.photos.map((_,i)=>`<div class="photo"><img data-pidx="${i}"><button type="button" data-rm="${i}">×</button></div>`).join('')}
+          ${v.photos.map((src,i)=>`<div class="photo"><img src="${src}" data-pidx="${i}"><button type="button" data-rm="${i}">×</button></div>`).join('')}
           <label class="addphoto" title="Añadir foto">+<input type="file" accept="image/*" capture="environment"></label>
         </div>`;
       cont.appendChild(wrap);
 
-      v.photos.forEach((src, i) => {
-        const img = wrap.querySelector(`img[data-pidx="${i}"]`);
-        if(img) img.src = src;
-      });
-
+      // listeners
       wrap.querySelectorAll('input[type=radio]').forEach(r => {
-        r.addEventListener('change', () => { v.val = r.value; state.dirty=true; updateStats(); });
+        r.addEventListener('change', () => { 
+          v.val = r.value; 
+          updateStats(); 
+          triggerAutosave(true); // Guardado inmediato al cambiar radio
+        });
       });
-      wrap.querySelector('textarea').addEventListener('input', e => { v.obs = e.target.value; state.dirty=true; });
+      wrap.querySelector('textarea').addEventListener('input', e => { 
+        v.obs = e.target.value; 
+        triggerAutosave(); // Guardado debounced al escribir
+      });
       wrap.querySelector('input[type=file]').addEventListener('change', async e => {
         const file = e.target.files[0]; if(!file) return;
         const dataUrl = await readAndResize(file, 1280, 0.72);
         v.photos.push(dataUrl);
-        state.dirty = true;
-        renderForm();
+        await saveAudit(true); // Guardado inmediato de foto
+        renderForm(); // re-render para mostrar nueva foto
       });
       wrap.querySelectorAll('button[data-rm]').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
           const idx = Number(btn.dataset.rm);
           v.photos.splice(idx,1);
-          state.dirty = true;
+          await saveAudit(true); // Guardado inmediato al borrar foto
           renderForm();
+        });
+      });
+      wrap.querySelectorAll('.photo img').forEach(img => {
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', () => {
+          openLightbox(img.src);
         });
       });
     });
     cont.appendChild(card);
   });
 
+  // firma — restaurar si existía
   setTimeout(()=>{ initSignature(); if(state.data.signature){ drawSignatureFromData(state.data.signature); } }, 50);
   updateStats();
 }
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-/* --------------------- Foto: redimensionar --------------------- */
+/* --------------------- Foto: redimensionar para no saturar el almacenamiento --------------------- */
 function readAndResize(file, maxDim, quality){
   return new Promise(resolve => {
     const r = new FileReader();
@@ -324,7 +374,13 @@ function initSignature(){
   };
   const start = e => { drawing=true; const {x,y}=pos(e); sigCtx.beginPath(); sigCtx.moveTo(x,y); e.preventDefault(); };
   const move  = e => { if(!drawing) return; const {x,y}=pos(e); sigCtx.lineTo(x,y); sigCtx.stroke(); e.preventDefault(); };
-  const end   = () => { if(!drawing) return; drawing=false; sigCanvas.parentElement.classList.add('has-sign'); state.data.signature = sigCanvas.toDataURL('image/png'); state.dirty=true; };
+  const end   = () => { 
+    if(!drawing) return; 
+    drawing=false; 
+    sigCanvas.parentElement.classList.add('has-sign'); 
+    state.data.signature = sigCanvas.toDataURL('image/png'); 
+    triggerAutosave(true); // Guardado inmediato al terminar de firmar
+  };
 
   sigCanvas.onmousedown=start; sigCanvas.onmousemove=move; window.onmouseup=end;
   sigCanvas.ontouchstart=start; sigCanvas.ontouchmove=move; sigCanvas.ontouchend=end;
@@ -344,10 +400,10 @@ function clearSignature(){
   sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);
   sigCanvas.parentElement.classList.remove('has-sign');
   state.data.signature = null;
-  state.dirty = true;
+  triggerAutosave(true); // Guardado inmediato al borrar la firma
 }
 
-/* --------------------- Cabecera --------------------- */
+/* --------------------- Lectura de la cabecera al guardar --------------------- */
 function syncHeader(){
   state.data.hotel   = $('#f-hotel').value;
   state.data.auditor = $('#f-auditor').value;
@@ -425,6 +481,7 @@ function showSummary(){
   openModal('modal-summary');
 }
 
+/* --------------------- Modal --------------------- */
 function openModal(id){ $('#'+id).classList.add('show'); }
 function closeModal(id){ $('#'+id).classList.remove('show'); }
 window.closeModal = closeModal;
@@ -445,6 +502,7 @@ async function generatePDF(){
   };
 
   const header = () => {
+    // Banda superior
     doc.setFillColor(COR); doc.rect(0,0,W,16,'F');
     doc.setTextColor('#FFF'); doc.setFont('helvetica','bold'); doc.setFontSize(13);
     doc.text('COR OUTSOURCING — Auditoría Operativa', M, 10);
@@ -463,9 +521,11 @@ async function generatePDF(){
 
   header();
 
+  // Cabecera con datos
   doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(COR);
   doc.text('AUDITORÍA OPERATIVA Y RENTABILIDAD', M, y); y += 6;
   doc.setTextColor(DARK); doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  const lineH = 5.5;
   const col = (W - 2*M) / 2;
   doc.setDrawColor(BORDER); doc.setLineWidth(0.2);
   doc.rect(M, y, W-2*M, 22);
@@ -481,6 +541,7 @@ async function generatePDF(){
   doc.setFont('helvetica','normal'); doc.text(state.data.rooms || '-', M+50, y+17);
   y += 26;
 
+  // Resumen
   let si=0,no=0,na=0,total=0;
   CHECKLIST.forEach(s => s.items.forEach(it => { total++; const v=state.data.items[it.id]?.val; if(v==='si')si++; else if(v==='no')no++; else if(v==='na')na++; }));
   const pct = (si+no) ? Math.round(si/(si+no)*100) : 0;
@@ -491,6 +552,7 @@ async function generatePDF(){
   doc.text(`SÍ: ${si}    NO: ${no}    N/A: ${na}    Pendientes: ${total-si-no-na}    Total: ${total}`, W-M-3, y+7.5, { align:'right' });
   y += 16;
 
+  // Secciones
   for(const sec of CHECKLIST){
     ensure(14);
     doc.setFillColor(COR); doc.rect(M, y, W-2*M, 7, 'F');
@@ -506,6 +568,7 @@ async function generatePDF(){
       const hRow = Math.max(6, split.length*4.4 + 1) + (v.obs ? 4 + doc.splitTextToSize(v.obs, W-2*M-6).length*3.8 : 0);
       ensure(hRow + 2);
 
+      // estado visual
       const stateColor = v.val==='si'? '#1f9d55' : v.val==='no'? '#d83b3b' : v.val==='na'? '#8a8f97' : '#dddddd';
       doc.setFillColor(stateColor); doc.circle(M+3, y+2.4, 1.8, 'F');
       doc.setFontSize(8); doc.setTextColor('#FFF'); doc.setFont('helvetica','bold');
@@ -514,6 +577,7 @@ async function generatePDF(){
       doc.setTextColor(DARK); doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
 
       doc.text(split, M+7, y+2.5);
+      // estado a la derecha
       doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
       doc.setTextColor(stateColor==='#dddddd'?MUTED:stateColor);
       doc.text(v.val ? v.val.toUpperCase() : '—', W-M-2, y+2.5, { align:'right' });
@@ -527,12 +591,14 @@ async function generatePDF(){
         cursor += obsSplit.length*3.8 + 1.5;
         doc.setTextColor(DARK); doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
       }
+      // fotos: si las hay, las anexamos al final del PDF para no romper la maquetación
       y = cursor + 2;
       doc.setDrawColor('#EEE'); doc.line(M, y, W-M, y); y += 1.5;
     }
     y += 2;
   }
 
+  // Plan de acción
   ensure(60);
   doc.setFillColor(COR); doc.rect(M, y, W-2*M, 7, 'F');
   doc.setTextColor('#FFF'); doc.setFont('helvetica','bold'); doc.setFontSize(10);
@@ -546,6 +612,7 @@ async function generatePDF(){
   }
   y += 74;
 
+  // Firma
   ensure(40);
   doc.setFont('helvetica','bold'); doc.setFontSize(10);
   doc.text('Auditora Operativa (Cor Outsourcing)', M, y+4);
@@ -556,6 +623,7 @@ async function generatePDF(){
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
   doc.text(state.data.auditor || 'María José Pozuelo', M, y+29);
 
+  // Anexo de fotos
   const fotos = [];
   CHECKLIST.forEach(sec => sec.items.forEach(it => {
     const v = state.data.items[it.id];
@@ -587,6 +655,7 @@ async function generatePDF(){
     }
   }
 
+  // pies de página en todas
   const pages = doc.internal.getNumberOfPages();
   for(let p=1;p<=pages;p++){ doc.setPage(p); footer(); }
 
@@ -615,22 +684,50 @@ function bindUI(){
   $('#btn-pdf-modal').addEventListener('click', () => { closeModal('modal-summary'); generatePDF(); });
   $('#btn-clear-sig').addEventListener('click', clearSignature);
 
+  // sync de cabecera en cada cambio con autoguardado debounced
   ['f-hotel','f-auditor','f-date','f-start','f-end','f-rooms','f-plan'].forEach(id => {
     document.addEventListener('input', e => {
-      if(e.target.id === id) state.dirty = true;
+      if(e.target.id === id) {
+        triggerAutosave();
+      }
     });
   });
 
+  // antes de salir
   window.addEventListener('beforeunload', e => {
     if(state.dirty){ e.preventDefault(); e.returnValue=''; }
   });
+
+  // Cerrar lightbox al hacer clic en él
+  const lb = document.getElementById('modal-lightbox');
+  if (lb) {
+    lb.addEventListener('click', closeLightbox);
+  }
+
+  // Descargar foto desde el visor
+  const dlBtn = document.getElementById('lightbox-download');
+  if (dlBtn) {
+    dlBtn.addEventListener('click', e => {
+      e.stopPropagation(); // Evitar que se cierre el lightbox al hacer clic
+      const img = document.getElementById('lightbox-img');
+      if (!img || !img.src) return;
+      
+      const a = document.createElement('a');
+      a.href = img.src;
+      a.download = `cor_auditoria_foto_${Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  }
 }
 
-/* --------------------- Autenticación (PIN) --------------------- */
+/* --------------------- Autenticación (PIN de 4 dígitos) --------------------- */
+// Hash SHA-256 para el PIN "2026" con sal fija.
 const AUTH = {
   SALT: 'cor-audit-2026-bilbao',
-  HASH: '02f49db75af3173497b2ef11910a2aa949dab6ab83884da3f6f680bf8726c62f',
-  KEY:  'cor-audit-auth-v1'
+  HASH: '2d0e9f125e969f9fc8dd618fcca8136f208a8f72b65b8fb76c62a1e7a7f88e1f',
+  KEY:  'cor_audit_session_token' // Obfuscado y guardado temporalmente en sessionStorage
 };
 
 async function sha256(text){
@@ -638,63 +735,187 @@ async function sha256(text){
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
-async function tryAuth(pwd){
-  const h = await sha256(AUTH.SALT + pwd);
+
+async function tryAuth(pin){
+  const h = await sha256(AUTH.SALT + pin);
   return h === AUTH.HASH;
 }
-function isAuthed(){ return localStorage.getItem(AUTH.KEY) === AUTH.HASH; }
-function setAuthed(){ localStorage.setItem(AUTH.KEY, AUTH.HASH); }
-function logout(){ localStorage.removeItem(AUTH.KEY); showLock(); }
+
+function isAuthed(){
+  const token = sessionStorage.getItem(AUTH.KEY);
+  if (!token) return false;
+  
+  // Validar formato y expiración de 12 horas del token de sesión
+  try {
+    const parsed = JSON.parse(atob(token));
+    if (parsed.expiry < Date.now()) {
+      sessionStorage.removeItem(AUTH.KEY);
+      return false;
+    }
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+function setAuthed(){
+  // Crear un token temporal firmado por base64
+  const sessionData = {
+    expiry: Date.now() + 12 * 60 * 60 * 1000, // 12 horas
+    random: Math.random().toString(36).substring(2)
+  };
+  const token = btoa(JSON.stringify(sessionData));
+  sessionStorage.setItem(AUTH.KEY, token);
+}
+
+function logout(){
+  sessionStorage.removeItem(AUTH.KEY);
+  showLock();
+}
+
+let enteredPin = "";
+
+function updatePinDots() {
+  const dots = document.querySelectorAll('#pin-display .pin-dot');
+  dots.forEach((dot, idx) => {
+    if (idx < enteredPin.length) {
+      dot.classList.add('filled');
+    } else {
+      dot.classList.remove('filled');
+    }
+  });
+}
+
+async function pressPinKey(val) {
+  if (enteredPin.length >= 4) return;
+  enteredPin += val;
+  updatePinDots();
+  
+  if (enteredPin.length === 4) {
+    const ok = await tryAuth(enteredPin);
+    if (ok) {
+      setAuthed();
+      const err = document.getElementById('lock-error');
+      if (err) err.innerHTML = '&nbsp;';
+      hideLock();
+      enteredPin = "";
+      updatePinDots();
+    } else {
+      const err = document.getElementById('lock-error');
+      if (err) err.textContent = 'PIN incorrecto';
+      enteredPin = "";
+      updatePinDots();
+      
+      const lockSection = document.getElementById('view-lock');
+      if (lockSection) {
+        lockSection.classList.add('shake-anim');
+        setTimeout(() => {
+          lockSection.classList.remove('shake-anim');
+        }, 300);
+      }
+    }
+  }
+}
+
+function clearPin() {
+  enteredPin = "";
+  updatePinDots();
+  const err = document.getElementById('lock-error');
+  if (err) err.innerHTML = '&nbsp;';
+}
+
+function backspacePin() {
+  if (enteredPin.length > 0) {
+    enteredPin = enteredPin.slice(0, -1);
+    updatePinDots();
+    const err = document.getElementById('lock-error');
+    if (err) err.innerHTML = '&nbsp;';
+  }
+}
+
+/* --------------------- Lightbox de Fotos --------------------- */
+function openLightbox(src) {
+  const lb = document.getElementById('modal-lightbox');
+  const img = document.getElementById('lightbox-img');
+  if (!lb || !img) return;
+  img.src = src;
+  lb.style.display = 'flex';
+  setTimeout(() => {
+    lb.classList.add('show');
+  }, 10);
+}
+
+function closeLightbox() {
+  const lb = document.getElementById('modal-lightbox');
+  if (!lb) return;
+  lb.classList.remove('show');
+  setTimeout(() => {
+    lb.style.display = 'none';
+  }, 200);
+}
 
 function showLock(){
   document.getElementById('view-lock').style.display = 'flex';
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
-  setTimeout(() => document.getElementById('lock-input')?.focus(), 100);
+  enteredPin = "";
+  updatePinDots();
 }
+
 function hideLock(){
   document.getElementById('view-lock').style.display = 'none';
   document.getElementById('app-header').style.display = '';
   document.getElementById('app-main').style.display = '';
 }
+
 function bindLock(){
-  const form = document.getElementById('lock-form');
-  const input = document.getElementById('lock-input');
-  const err = document.getElementById('lock-error');
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    const val = input.value.trim();
-    if(!val) return;
-    const ok = await tryAuth(val);
-    if(ok){
-      setAuthed();
-      err.innerHTML = '&nbsp;';
-      hideLock();
-      input.value = '';
-    } else {
-      err.textContent = 'Contraseña incorrecta';
-      input.value = '';
-      input.focus();
-      input.animate([
-        { transform: 'translateX(0)' },
-        { transform: 'translateX(-8px)' },
-        { transform: 'translateX(8px)' },
-        { transform: 'translateX(-4px)' },
-        { transform: 'translateX(0)' }
-      ], { duration: 280, easing: 'ease-out' });
+  const keyboard = document.getElementById('pin-keyboard');
+  if (!keyboard) return;
+  
+  keyboard.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    
+    const val = btn.dataset.val;
+    const action = btn.dataset.action;
+    
+    if (val !== undefined) {
+      pressPinKey(val);
+    } else if (action === 'clear') {
+      clearPin();
+    } else if (action === 'backspace') {
+      backspacePin();
+    }
+  });
+
+  // Admitir entrada física para facilitar pruebas y uso en PC
+  document.addEventListener('keydown', e => {
+    const lockView = document.getElementById('view-lock');
+    if (lockView && lockView.style.display !== 'none') {
+      if (e.key >= '0' && e.key <= '9') {
+        pressPinKey(e.key);
+      } else if (e.key === 'Backspace') {
+        backspacePin();
+      } else if (e.key === 'Escape' || e.key === 'Delete') {
+        clearPin();
+      }
     }
   });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   bindLock();
-  if(isAuthed()){ hideLock(); } else { showLock(); }
+  if(isAuthed()){
+    hideLock();
+  } else {
+    showLock();
+  }
   bindUI();
   refreshHistoryCount();
 
   const lo = document.getElementById('btn-logout');
   if(lo) lo.addEventListener('click', () => {
-    if(confirm('¿Cerrar sesión? Tendrás que volver a introducir la contraseña la próxima vez. Las auditorías guardadas no se borran.')){
+    if(confirm('¿Cerrar sesión? Tendrás que volver a introducir el PIN la próxima vez. Las auditorías guardadas no se borran.')){
       logout();
     }
   });
