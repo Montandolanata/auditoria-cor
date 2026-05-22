@@ -385,6 +385,18 @@
 
 <!-- VISTA: HISTÓRICO -->
 <section id="view-history" class="view">
+  <div class="card" style="margin-bottom:14px; padding: 12px 14px;">
+    <h2 style="margin-bottom:8px; border:0; padding:0; font-size:14px;"><span class="num" style="width:20px;height:20px;line-height:20px;font-size:11px;margin-right:6px;">💾</span>Copias de seguridad</h2>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-ghost" id="btn-export-backup" style="flex:1; padding:8px 10px; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:5px; border-radius:8px;">
+        📤 Exportar backup
+      </button>
+      <button class="btn-ghost" id="btn-import-backup" style="flex:1; padding:8px 10px; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:5px; border-radius:8px;">
+        📥 Importar backup
+      </button>
+      <input type="file" id="input-import-file" accept=".json" style="display:none">
+    </div>
+  </div>
   <div id="history-list"></div>
 </section>
 

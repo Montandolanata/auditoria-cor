@@ -453,6 +453,93 @@ async function refreshHistoryCount(){
   $('#history-count').textContent = all.length ? `${all.length} auditoría${all.length===1?'':'s'} guardada${all.length===1?'':'s'}` : 'Sin auditorías guardadas';
 }
 
+/* --------------------- Copias de Seguridad --------------------- */
+async function exportBackup() {
+  try {
+    const audits = await dbAll();
+    if (audits.length === 0) {
+      toast('No hay auditorías para exportar');
+      return;
+    }
+    
+    const backupData = {
+      generator: 'Cor Outsourcing PWA Backup',
+      exportedAt: Date.now(),
+      audits: audits
+    };
+    
+    const jsonString = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const today = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_auditorias_cor_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast('Copia de seguridad exportada');
+  } catch (err) {
+    console.error(err);
+    toast('Error al exportar copia de seguridad');
+  }
+}
+
+async function importBackup(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  e.target.value = '';
+  
+  try {
+    const reader = new FileReader();
+    const fileContent = await new Promise((resolve, reject) => {
+      reader.onload = event => resolve(event.target.result);
+      reader.onerror = error => reject(error);
+      reader.readAsText(file);
+    });
+    
+    const backupData = JSON.parse(fileContent);
+    
+    if (!backupData || typeof backupData !== 'object' || !Array.isArray(backupData.audits)) {
+      toast('Archivo de copia de seguridad no válido');
+      return;
+    }
+    
+    const auditsToImport = backupData.audits;
+    if (auditsToImport.length === 0) {
+      toast('El backup no contiene ninguna auditoría');
+      return;
+    }
+    
+    if (!confirm(`Se van a importar ${auditsToImport.length} auditoría(s). Las auditorías con el mismo ID se sobrescribirán. ¿Deseas continuar?`)) {
+      return;
+    }
+    
+    let importedCount = 0;
+    for (const audit of auditsToImport) {
+      if (audit.id && audit.data) {
+        await dbPut(audit);
+        importedCount++;
+      }
+    }
+    
+    toast(`¡Importadas ${importedCount} de ${auditsToImport.length} auditorías!`);
+    await renderHistory();
+    await refreshHistoryCount();
+  } catch (err) {
+    console.error(err);
+    toast('Error al importar el archivo JSON');
+  }
+}
+
+
 /* --------------------- Resumen --------------------- */
 function showSummary(){
   syncHeader();
@@ -720,7 +807,19 @@ function bindUI(){
       document.body.removeChild(a);
     });
   }
+
+  // Copias de seguridad
+  const btnExport = $('#btn-export-backup');
+  const btnImport = $('#btn-import-backup');
+  const inputImport = $('#input-import-file');
+  
+  if (btnExport) btnExport.addEventListener('click', exportBackup);
+  if (btnImport && inputImport) {
+    btnImport.addEventListener('click', () => inputImport.click());
+    inputImport.addEventListener('change', importBackup);
+  }
 }
+
 
 /* --------------------- Autenticación (PIN de 4 dígitos) --------------------- */
 // Hash SHA-256 para el PIN "2026" con sal fija.
