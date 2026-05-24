@@ -207,7 +207,7 @@ function emptyData(){
   const today = new Date();
   const pad = n => String(n).padStart(2,'0');
   return {
-    hotel:'Hotel Puerta de Bilbao',
+    hotel:'',
     auditor:'María José Pozuelo',
     date: `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`,
     start: `${pad(today.getHours())}:${pad(today.getMinutes())}`,
@@ -238,7 +238,30 @@ async function loadAudit(id){
 
 /* --------------------- Render del formulario --------------------- */
 function renderForm(){
-  $('#f-hotel').value = state.data.hotel || '';
+  const hotelSelect = $('#f-hotel');
+  const hotelOtro = $('#f-hotel-otro');
+  const savedHotel = state.data.hotel || '';
+  
+  let found = false;
+  for (let i = 0; i < hotelSelect.options.length; i++) {
+    if (hotelSelect.options[i].value === savedHotel) {
+      hotelSelect.value = savedHotel;
+      found = true;
+      break;
+    }
+  }
+  
+  if (!found && savedHotel !== '') {
+    hotelSelect.value = 'OTRO';
+    hotelOtro.value = savedHotel;
+    hotelOtro.style.display = '';
+  } else {
+    if (savedHotel === '') {
+      hotelSelect.value = '';
+    }
+    hotelOtro.value = '';
+    hotelOtro.style.display = 'none';
+  }
   $('#f-auditor').value = state.data.auditor || '';
   $('#f-date').value = state.data.date || '';
   $('#f-start').value = state.data.start || '';
@@ -421,7 +444,13 @@ function clearSignature(){
 
 /* --------------------- Lectura de la cabecera al guardar --------------------- */
 function syncHeader(){
-  state.data.hotel   = $('#f-hotel').value;
+  const hotelSelect = $('#f-hotel');
+  const hotelOtro = $('#f-hotel-otro');
+  if (hotelSelect.value === 'OTRO') {
+    state.data.hotel = hotelOtro.value;
+  } else {
+    state.data.hotel = hotelSelect.value || '';
+  }
   state.data.auditor = $('#f-auditor').value;
   state.data.date    = $('#f-date').value;
   state.data.start   = $('#f-start').value;
@@ -834,7 +863,9 @@ async function generatePDF(){
   const pages = doc.internal.getNumberOfPages();
   for(let p=1;p<=pages;p++){ doc.setPage(p); footer(); }
 
-  const fileName = `Auditoria_CorOutsourcing_${state.data.date || 'sin-fecha'}.pdf`;
+  // Sanitizar el nombre del hotel para el archivo
+  const hotelClean = (state.data.hotel || 'SinHotel').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '_').trim();
+  const fileName = `Auditoria_Cor_${hotelClean}_${state.data.date || 'sin-fecha'}.pdf`;
   doc.save(fileName);
   toast('PDF generado');
 }
@@ -860,7 +891,7 @@ function bindUI(){
   $('#btn-clear-sig').addEventListener('click', clearSignature);
 
   // sync de cabecera en cada cambio con autoguardado debounced
-  ['f-hotel','f-auditor','f-date','f-start','f-end','f-rooms','f-plan'].forEach(id => {
+  ['f-hotel','f-hotel-otro','f-auditor','f-date','f-start','f-end','f-rooms','f-plan'].forEach(id => {
     document.addEventListener('input', e => {
       if(e.target.id === id) {
         if(id === 'f-plan') {
@@ -870,6 +901,22 @@ function bindUI(){
       }
     });
   });
+
+  // Control del selector de hotel
+  const hotelSelect = $('#f-hotel');
+  const hotelOtro = $('#f-hotel-otro');
+  if (hotelSelect && hotelOtro) {
+    hotelSelect.addEventListener('change', () => {
+      if (hotelSelect.value === 'OTRO') {
+        hotelOtro.style.display = '';
+        hotelOtro.focus();
+      } else {
+        hotelOtro.style.display = 'none';
+        hotelOtro.value = '';
+      }
+      triggerAutosave(true); // Guardar borrador de inmediato al cambiar de hotel
+    });
+  }
 
   // antes de salir
   window.addEventListener('beforeunload', e => {
