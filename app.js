@@ -397,7 +397,9 @@ function renderForm(){
         v.photos.push(dataUrl);
         try {
           await saveAudit(true); // Guardado inmediato de foto
-          renderForm(); // re-render para mostrar nueva foto
+          // Re-render PARCIAL: solo el bloque de fotos de este ítem, no todo el formulario.
+          // Así no se pierde el foco del textarea ni se redibuja la firma.
+          rerenderPhotos(it.id);
         } catch(err) {
           // Si no cabe la foto, deshacer el push para no engañar a la usuaria.
           v.photos.pop();
@@ -409,7 +411,7 @@ function renderForm(){
           const idx = Number(btn.dataset.rm);
           v.photos.splice(idx,1);
           await saveAudit(true); // Guardado inmediato al borrar foto
-          renderForm();
+          rerenderPhotos(it.id); // Re-render parcial, no todo el formulario.
         });
       });
       wrap.querySelectorAll('.photo img').forEach(img => {
@@ -435,6 +437,56 @@ function autoGrowTextarea(el) {
   if (!el) return;
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
+}
+
+/* --------------------- Re-render parcial de fotos -----------------------------------------
+   Cuando se añade o borra una foto, regeneramos SOLO el bloque .photos de ese ítem en lugar
+   de todo el formulario. Esto evita:
+   - perder el foco/cursor del textarea en el que estaba escribiendo la usuaria
+   - redibujar (y deformar) la firma del canvas
+   - reinicializar todos los listeners
+   - el "flash" visual de un re-render completo
+   ------------------------------------------------------------------------------------------- */
+function rerenderPhotos(itemId){
+  const wrap = document.querySelector(`.item[data-id="${itemId}"]`);
+  if (!wrap) return;
+  const v = state.data.items[itemId];
+  if (!v) return;
+  const photosEl = wrap.querySelector('.photos');
+  if (!photosEl) return;
+  
+  // Reconstruir el HTML del bloque de fotos
+  photosEl.innerHTML = `
+    ${v.photos.map((src,i)=>`<div class="photo"><img src="${src}" data-pidx="${i}"><button type="button" data-rm="${i}">×</button></div>`).join('')}
+    <label class="addphoto" title="Añadir foto">+<input type="file" accept="image/*" capture="environment"></label>
+  `;
+  
+  // Volver a enganchar listeners SOLO para este bloque (no tocamos textarea, radios ni firma).
+  photosEl.querySelector('input[type=file]').addEventListener('change', async e => {
+    const file = e.target.files[0]; if(!file) return;
+    const dataUrl = await readAndResize(file, 1280, 0.72);
+    v.photos.push(dataUrl);
+    try {
+      await saveAudit(true);
+      rerenderPhotos(itemId);
+    } catch(err) {
+      v.photos.pop();
+    }
+  });
+  photosEl.querySelectorAll('button[data-rm]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.dataset.rm);
+      v.photos.splice(idx,1);
+      await saveAudit(true);
+      rerenderPhotos(itemId);
+    });
+  });
+  photosEl.querySelectorAll('.photo img').forEach(img => {
+    img.style.cursor = 'zoom-in';
+    img.addEventListener('click', () => {
+      openLightbox(img.src);
+    });
+  });
 }
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -595,7 +647,13 @@ async function renderHistory(){
       e.stopPropagation();
       const hotelName = d.hotel || '(sin hotel)';
       const auditDate = d.date || '(sin fecha)';
-      if(confirm(`¿Estás seguro de que deseas borrar la auditoría de "${hotelName}" del ${auditDate}?`)){
+      const ok = await confirmModal({
+        title: 'Borrar auditoría',
+        message: `¿Seguro que quieres borrar la auditoría de "${hotelName}" del ${auditDate}?\n\nEsta acción no se puede deshacer.`,
+        okText: 'Borrar',
+        danger: true
+      });
+      if(ok){
         await dbDel(a.id);
         toast('Auditoría eliminada');
         renderHistory();
@@ -699,7 +757,12 @@ async function importBackup(e) {
       return;
     }
     
-    if (!confirm(`Se van a importar ${auditsToImport.length} auditoría(s). Las auditorías con el mismo ID se sobrescribirán. ¿Deseas continuar?`)) {
+    const ok = await confirmModal({
+      title: 'Importar copia de seguridad',
+      message: `Se van a importar ${auditsToImport.length} auditoría(s).\n\nLas auditorías con el mismo ID se sobrescribirán. ¿Continuar?`,
+      okText: 'Importar'
+    });
+    if (!ok) {
       return;
     }
     
@@ -759,10 +822,98 @@ function openModal(id){ $('#'+id).classList.add('show'); }
 function closeModal(id){ $('#'+id).classList.remove('show'); }
 window.closeModal = closeModal;
 
+/* --------------------- Modal de confirmación (reemplaza confirm() del navegador) ---------
+   Razones para no usar confirm() nativo:
+   - En iOS PWA instalada rompe la sensación "app nativa"
+   - El estilo del navegador no es consistente con el resto de la app
+   - confirm() bloquea el hilo, los modales propios son async amigable
+   
+   Uso: const ok = await confirmModal({ title, message, okText, danger });
+   ---------------------------------------------------------------------------------------- */
+function confirmModal(opts){
+  return new Promise(resolve => {
+    const modal = $('#modal-confirm');
+    const titleEl = $('#confirm-title');
+    const msgEl = $('#confirm-message');
+    const okBtn = $('#confirm-ok');
+    const cancelBtn = $('#confirm-cancel');
+    
+    titleEl.textContent = opts.title || 'Confirmar';
+    msgEl.textContent = opts.message || '';
+    okBtn.textContent = opts.okText || 'Aceptar';
+    cancelBtn.textContent = opts.cancelText || 'Cancelar';
+    okBtn.classList.toggle('danger', !!opts.danger);
+    
+    // Reset de listeners anteriores (clonado de los nodos para limpiar handlers).
+    const newOk = okBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+    
+    const close = (result) => {
+      modal.classList.remove('show');
+      resolve(result);
+    };
+    
+    newOk.addEventListener('click', () => close(true));
+    newCancel.addEventListener('click', () => close(false));
+    
+    // Click fuera de la caja → cancelar
+    modal.addEventListener('click', function onBg(e){
+      if (e.target === modal) {
+        modal.removeEventListener('click', onBg);
+        close(false);
+      }
+    });
+    
+    modal.classList.add('show');
+  });
+}
+
+/* --------------------- Overlay del PDF -----------------------------------------------------
+   Pantalla bloqueante mientras se genera el PDF. Con auditorías que tienen muchas fotos la
+   generación puede tardar varios segundos en móviles modestos, y sin feedback parece que la
+   app se ha colgado.
+   ------------------------------------------------------------------------------------------- */
+function showPdfOverlay(subText){
+  const ov = $('#pdf-overlay');
+  if (!ov) return;
+  const sub = $('#pdf-overlay-sub');
+  if (sub && subText) sub.textContent = subText;
+  ov.classList.add('show');
+}
+function hidePdfOverlay(){
+  const ov = $('#pdf-overlay');
+  if (!ov) return;
+  ov.classList.remove('show');
+}
+
 /* --------------------- Generar PDF --------------------- */
 async function generatePDF(){
+  // Mostrar overlay desde YA, antes de cualquier procesamiento, para que
+  // la usuaria vea respuesta inmediata al pulsar el botón.
+  showPdfOverlay('Esto puede tardar unos segundos');
+  
+  try {
+    await _generatePDFInner();
+  } catch(err) {
+    console.error('Error generando PDF:', err);
+    toast('Error al generar PDF', true);
+  } finally {
+    // El overlay se cierra siempre, haya o no error. Le damos un pequeño retardo para
+    // que la usuaria vea la transición y no parezca un flash.
+    setTimeout(() => hidePdfOverlay(), 250);
+  }
+}
+
+async function _generatePDFInner(){
   syncHeader();
   await saveAudit(true);
+  
+  // Ceder al navegador un tick para que pinte el overlay antes de empezar el trabajo pesado.
+  // Sin esto el navegador no llega a renderizar el overlay porque jsPDF bloquea el hilo.
+  await new Promise(resolve => setTimeout(resolve, 50));
+  
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'a4' });
   const W = 210, H = 297, M = 12;
@@ -1021,7 +1172,13 @@ function bindUI(){
   }));
   $('#btn-back').addEventListener('click', async () => {
     if(state.view==='audit' && state.dirty){
-      if(confirm('¿Guardar cambios antes de salir?')) await saveAudit();
+      const ok = await confirmModal({
+        title: 'Cambios sin guardar',
+        message: '¿Quieres guardar los cambios antes de salir?',
+        okText: 'Guardar',
+        cancelText: 'Salir sin guardar'
+      });
+      if(ok) await saveAudit();
     }
     goView('home');
   });
@@ -1100,8 +1257,13 @@ function bindUI(){
   // Botón "Cambiar PIN" en la vista de info
   const btnChangePin = $('#btn-change-pin');
   if (btnChangePin) {
-    btnChangePin.addEventListener('click', () => {
-      if (confirm('Vas a cambiar el PIN. Tendrás que confirmar el actual y crear uno nuevo. ¿Continuar?')) {
+    btnChangePin.addEventListener('click', async () => {
+      const ok = await confirmModal({
+        title: 'Cambiar PIN',
+        message: 'Vas a cambiar el PIN. Tendrás que confirmar el actual y crear uno nuevo.',
+        okText: 'Continuar'
+      });
+      if (ok) {
         startChangePinFlow();
       }
     });
@@ -1453,10 +1615,13 @@ function backspacePin() {
 }
 
 // "Olvidé mi PIN": confirma con la usuaria y borra la config (sin tocar IndexedDB).
-function handleForgotPin(){
-  const msg = '¿Olvidaste tu PIN?\n\nSi continúas, podrás crear uno nuevo. '
-            + 'Tus auditorías guardadas NO se borrarán.\n\n¿Continuar?';
-  if (confirm(msg)) {
+async function handleForgotPin(){
+  const ok = await confirmModal({
+    title: '¿Olvidaste tu PIN?',
+    message: 'Si continúas, podrás crear un PIN nuevo.\n\nTus auditorías guardadas NO se borrarán.',
+    okText: 'Crear nuevo PIN'
+  });
+  if (ok) {
     clearPinConfig();
     startSetupFlow();
   }
@@ -1610,8 +1775,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   refreshHistoryCount();
 
   const lo = document.getElementById('btn-logout');
-  if(lo) lo.addEventListener('click', () => {
-    if(confirm('¿Cerrar sesión? Tendrás que volver a introducir el PIN la próxima vez. Las auditorías guardadas no se borran.')){
+  if(lo) lo.addEventListener('click', async () => {
+    const ok = await confirmModal({
+      title: 'Cerrar sesión',
+      message: 'Tendrás que volver a introducir el PIN la próxima vez.\n\nLas auditorías guardadas no se borran.',
+      okText: 'Cerrar sesión'
+    });
+    if(ok){
       logout();
     }
   });
