@@ -1,7 +1,7 @@
 /* Service Worker — Auditoría Cor Outsourcing
    Estrategia: cache-first para los assets de la app, network-first para el CDN.
 */
-const CACHE = 'cor-audit-v4';
+const CACHE = 'cor-audit-v5';
 const ASSETS = [
   './',
   './index.html',
