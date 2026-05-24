@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#D14B3D">
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
 <meta name="googlebot" content="noindex, nofollow">
+<!-- iOS: app instalada en pantalla de inicio se ve más nativa -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Auditoría Cor">
 <title>Auditoría Cor Outsourcing</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -102,7 +106,7 @@
   .sig-actions{margin-top:6px;display:flex;justify-content:flex-end}
   .sig-actions button{background:transparent;border:0;color:var(--cor);font-weight:600;font-size:13px;cursor:pointer;padding:6px 10px}
   .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1f2024;color:#fff;padding:11px 18px;border-radius:99px;font-size:13.5px;z-index:50;opacity:0;transition:opacity .2s, bottom .2s;pointer-events:none;max-width:90%;text-align:center}
-  .toast.show{opacity:1;bottom:90px}
+  .toast.show{opacity:1;bottom:90px;pointer-events:auto;cursor:pointer}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;z-index:60}
   .modal.show{display:flex}
   .modal .sheet{background:#fff;width:100%;border-radius:18px 18px 0 0;padding:18px;max-height:80vh;overflow:auto}
@@ -183,6 +187,21 @@
     transform: scale(0.93);
   }
   
+  /* Enlace "olvidé mi PIN" */
+  .forgot-pin-link {
+    margin-top: 18px;
+    color: #FFD3CE;
+    font-size: 12.5px;
+    text-decoration: underline;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    padding: 8px;
+  }
+  .forgot-pin-link:hover {
+    color: #fff;
+  }
+  
   /* Animación Shake en error de PIN */
   .shake-anim {
     animation: shake 0.3s ease-in-out;
@@ -258,8 +277,8 @@
 <!-- VISTA: BLOQUEO POR PIN -->
 <section id="view-lock" style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;padding:24px;background:linear-gradient(180deg, #D14B3D 0%, #A93A2F 100%);color:#fff;text-align:center;position:fixed;inset:0;z-index:100">
   <div style="background:#fff;width:80px;height:80px;border-radius:20px;color:#D14B3D;font-weight:800;font-size:28px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 6px 20px rgba(0,0,0,.2)">cor</div>
-  <h2 style="margin:0 0 4px;font-size:20px;font-weight:700">Auditoría Cor Outsourcing</h2>
-  <p style="margin:0 0 16px;opacity:.9;font-size:13.5px">Introduce tu PIN de 4 dígitos</p>
+  <h2 id="lock-title" style="margin:0 0 4px;font-size:20px;font-weight:700">Auditoría Cor Outsourcing</h2>
+  <p id="lock-subtitle" style="margin:0 0 16px;opacity:.9;font-size:13.5px;max-width:320px">Introduce tu PIN de 4 dígitos</p>
   
   <div class="pin-display" id="pin-display">
     <div class="pin-dot" data-idx="0"></div>
@@ -284,6 +303,8 @@
     <button type="button" class="pin-key" data-val="0">0</button>
     <button type="button" class="pin-key action" data-action="backspace" style="font-size:18px">⌫</button>
   </div>
+
+  <button type="button" id="forgot-pin-link" class="forgot-pin-link">¿Olvidaste tu PIN?</button>
   
   <p style="position:absolute;bottom:16px;font-size:10px;opacity:.6;letter-spacing:1px">USO INTERNO · COR OUTSOURCING</p>
 </section>
@@ -325,7 +346,7 @@
     <div class="arrow">›</div>
   </div>
 
-  <div class="branding">v1.0 · <b>Cor Outsourcing</b> · uso interno</div>
+  <div class="branding">v1.1 · <b>Cor Outsourcing</b> · uso interno</div>
 </section>
 
 <!-- VISTA: AUDITORÍA -->
@@ -351,7 +372,7 @@
           <option value="BIT">BIT</option>
           <option value="SILKEN RAMBLAS">SILKEN RAMBLAS</option>
           <option value="SILKEN PLATJA D´ARO">SILKEN PLATJA D´ARO</option>
-          <option value="VINCCI  LARIOS">VINCCI LARIOS</option>
+          <option value="VINCCI LARIOS">VINCCI LARIOS</option>
           <option value="Meliá">Meliá</option>
           <option value="NH CANCILLER">NH CANCILLER</option>
           <option value="NYX">NYX</option>
@@ -432,6 +453,8 @@
       </button>
       <input type="file" id="input-import-file" accept=".json" style="display:none">
     </div>
+    <!-- Indicador de almacenamiento. Se rellena por JS al entrar en el histórico. -->
+    <div id="storage-indicator" style="margin-top:12px; display:none;"></div>
   </div>
   <div id="history-list"></div>
 </section>
@@ -453,8 +476,14 @@
     <p>Una vez instalada funciona sin internet y se abre como una app normal.</p>
   </div>
   <div class="card">
+    <h2><span class="num">🔑</span>Seguridad y PIN</h2>
+    <p>La app está protegida con un PIN de 4 dígitos que <b>solo tú conoces</b>. El PIN se guarda cifrado en este dispositivo y nunca sale de él.</p>
+    <p>Si olvidas el PIN, puedes restablecerlo desde la pantalla de bloqueo (botón "¿Olvidaste tu PIN?"). <b>Las auditorías guardadas no se borran</b>, solo se pide crear un PIN nuevo.</p>
+    <button id="btn-change-pin" style="margin-top:6px;padding:11px 18px;border-radius:10px;border:1.5px solid var(--cor);background:#fff;color:var(--cor);font-weight:700;cursor:pointer">Cambiar PIN</button>
+  </div>
+  <div class="card">
     <h2><span class="num">⎋</span>Cerrar sesión</h2>
-    <p>Si necesitas que la app vuelva a pedir la contraseña, pulsa el botón. <b>Esto no borra las auditorías guardadas</b>, solo el acceso.</p>
+    <p>Si necesitas que la app vuelva a pedir el PIN, pulsa el botón. <b>Esto no borra las auditorías guardadas</b>, solo el acceso temporal.</p>
     <button id="btn-logout" style="margin-top:6px;padding:11px 18px;border-radius:10px;border:1.5px solid var(--cor);background:#fff;color:var(--cor);font-weight:700;cursor:pointer">Cerrar sesión</button>
   </div>
 </section>
@@ -474,7 +503,7 @@
   </div>
 </div>
 
-<!-- Ligtbox Modal para ampliar fotos -->
+<!-- Lightbox modal para ampliar fotos -->
 <div class="modal-lightbox" id="modal-lightbox">
   <div class="close-btn" id="lightbox-download" style="right: 76px; font-size: 20px; font-weight: bold;" title="Descargar imagen">↓</div>
   <div class="close-btn">&times;</div>

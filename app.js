@@ -72,7 +72,8 @@ const state = {
   id: null,
   data: null,  // se rellena en newAudit / load
   view: 'home',
-  dirty: false
+  dirty: false,
+  storageWarned: false  // para no spamear el aviso de cuota
 };
 
 const $ = sel => document.querySelector(sel);
@@ -103,7 +104,21 @@ async function dbPut(audit){
     const tx = db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).put(audit);
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.onerror = () => {
+      const err = tx.error;
+      // Detectar cuota agotada y avisar a la usuaria de forma muy visible.
+      if (err && (err.name === 'QuotaExceededError' || err.code === 22)) {
+        showQuotaError();
+      }
+      reject(err);
+    };
+    tx.onabort = () => {
+      const err = tx.error;
+      if (err && (err.name === 'QuotaExceededError' || err.code === 22)) {
+        showQuotaError();
+      }
+      reject(err);
+    };
   });
 }
 async function dbGet(id){
@@ -134,6 +149,67 @@ async function dbDel(id){
   });
 }
 
+/* --------------------- Cuota de almacenamiento --------------------- */
+// Pedir almacenamiento persistente (evita que iOS/Android purguen los datos
+// si la app no se usa durante un tiempo).
+async function requestPersistentStorage(){
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const already = await navigator.storage.persisted();
+      if (!already) {
+        await navigator.storage.persist();
+      }
+    }
+  } catch(_) {}
+}
+
+// Estimación de uso para mostrar en el Histórico.
+async function getStorageInfo(){
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const e = await navigator.storage.estimate();
+      return {
+        used: e.usage || 0,
+        total: e.quota || 0,
+        percent: e.quota ? (e.usage / e.quota * 100) : 0
+      };
+    }
+  } catch(_) {}
+  return null;
+}
+
+function formatBytes(n){
+  if (n < 1024) return `${n} B`;
+  if (n < 1024*1024) return `${(n/1024).toFixed(1)} KB`;
+  return `${(n/1024/1024).toFixed(1)} MB`;
+}
+
+let quotaErrorShown = false;
+function showQuotaError(){
+  if (quotaErrorShown) return;
+  quotaErrorShown = true;
+  // Toast persistente (no se auto-oculta)
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = '⚠ No hay espacio para guardar. Exporta un backup y borra auditorías antiguas.';
+  el.style.background = '#d83b3b';
+  el.classList.add('show');
+  // Indicador en cabecera
+  const statusEl = $('#autosave-status');
+  if (statusEl) {
+    statusEl.textContent = '⚠ Sin espacio';
+    statusEl.style.color = '#FFD3CE';
+    statusEl.style.opacity = '1';
+  }
+  // Permitir cerrarlo tocando
+  el.onclick = () => {
+    el.classList.remove('show');
+    el.style.background = '';
+    quotaErrorShown = false;
+    el.onclick = null;
+  };
+}
+
 /* --------------------- Navegación --------------------- */
 function goView(name){
   state.view = name;
@@ -159,12 +235,16 @@ function goView(name){
 
 /* --------------------- Toast --------------------- */
 let toastTimer;
-function toast(msg){
+function toast(msg, isError){
   const el = $('#toast');
   el.textContent = msg;
+  el.style.background = isError ? '#d83b3b' : '';
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => {
+    el.classList.remove('show');
+    el.style.background = '';
+  }, 2200);
 }
 
 /* --------------------- Autoguardado con Debounce --------------------- */
@@ -173,32 +253,35 @@ function triggerAutosave(immediate = false) {
   state.dirty = true;
   
   const statusEl = $('#autosave-status');
-  if (statusEl) {
+  if (statusEl && !quotaErrorShown) {
     statusEl.textContent = 'Guardando...';
     statusEl.style.opacity = '1';
   }
 
   clearTimeout(autosaveTimeout);
   
-  if (immediate) {
-    saveAudit(true).then(() => {
-      if (statusEl) {
-        statusEl.textContent = '✓ Borrador guardado';
-        setTimeout(() => {
-          statusEl.style.opacity = '0.5';
-        }, 1200);
-      }
-    });
-  } else {
-    autosaveTimeout = setTimeout(async () => {
+  const doSave = async () => {
+    try {
       await saveAudit(true);
-      if (statusEl) {
+      if (statusEl && !quotaErrorShown) {
         statusEl.textContent = '✓ Borrador guardado';
         setTimeout(() => {
           statusEl.style.opacity = '0.5';
         }, 1200);
       }
-    }, 1000);
+    } catch (err) {
+      // El error ya se mostró en dbPut si era de cuota; si era otro, lo mostramos aquí.
+      if (!quotaErrorShown && statusEl) {
+        statusEl.textContent = '⚠ Error al guardar';
+        statusEl.style.color = '#FFD3CE';
+      }
+    }
+  };
+  
+  if (immediate) {
+    doSave();
+  } else {
+    autosaveTimeout = setTimeout(doSave, 1000);
   }
 }
 
@@ -312,8 +395,14 @@ function renderForm(){
         const file = e.target.files[0]; if(!file) return;
         const dataUrl = await readAndResize(file, 1280, 0.72);
         v.photos.push(dataUrl);
-        await saveAudit(true); // Guardado inmediato de foto
-        renderForm(); // re-render para mostrar nueva foto
+        try {
+          await saveAudit(true); // Guardado inmediato de foto
+          renderForm(); // re-render para mostrar nueva foto
+        } catch(err) {
+          // Si no cabe la foto, deshacer el push para no engañar a la usuaria.
+          v.photos.pop();
+          // showQuotaError ya se invocó dentro de dbPut.
+        }
       });
       wrap.querySelectorAll('button[data-rm]').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -462,16 +551,25 @@ function syncHeader(){
 /* --------------------- Guardar --------------------- */
 async function saveAudit(silent){
   syncHeader();
-  await dbPut({ id: state.id, savedAt: Date.now(), data: state.data });
-  state.dirty = false;
-  if(!silent) toast('Auditoría guardada');
-  refreshHistoryCount();
+  try {
+    await dbPut({ id: state.id, savedAt: Date.now(), data: state.data });
+    state.dirty = false;
+    if(!silent) toast('Auditoría guardada');
+    refreshHistoryCount();
+  } catch(err) {
+    if(!silent) toast('No se pudo guardar', true);
+    throw err;
+  }
 }
 
 /* --------------------- Histórico --------------------- */
 async function renderHistory(){
   const all = (await dbAll()).sort((a,b)=>b.savedAt - a.savedAt);
   const cont = $('#history-list');
+  
+  // Actualizar el indicador de almacenamiento
+  await renderStorageIndicator();
+  
   if(!all.length){
     cont.innerHTML = `<div class="empty"><div class="ic">⌛</div>Aún no has guardado ninguna auditoría.</div>`;
     return;
@@ -508,6 +606,29 @@ async function renderHistory(){
     cont.appendChild(el);
   });
 }
+
+async function renderStorageIndicator(){
+  const indicator = $('#storage-indicator');
+  if (!indicator) return;
+  const info = await getStorageInfo();
+  if (!info || !info.total) {
+    indicator.style.display = 'none';
+    return;
+  }
+  indicator.style.display = '';
+  const pct = info.percent;
+  const color = pct > 85 ? '#d83b3b' : (pct > 65 ? '#D14B3D' : '#6b6f76');
+  indicator.innerHTML = `
+    <div style="font-size:11px;color:${color};display:flex;align-items:center;gap:6px;">
+      <span>💾</span>
+      <span>${formatBytes(info.used)} usados de ${formatBytes(info.total)} (${pct.toFixed(1)}%)</span>
+    </div>
+    <div style="height:3px;background:#eee;border-radius:99px;margin-top:4px;overflow:hidden;">
+      <div style="height:100%;background:${color};width:${Math.min(100,pct)}%;"></div>
+    </div>
+  `;
+}
+
 async function refreshHistoryCount(){
   const all = await dbAll();
   $('#history-count').textContent = all.length ? `${all.length} auditoría${all.length===1?'':'s'} guardada${all.length===1?'':'s'}` : 'Sin auditorías guardadas';
@@ -547,7 +668,7 @@ async function exportBackup() {
     toast('Copia de seguridad exportada');
   } catch (err) {
     console.error(err);
-    toast('Error al exportar copia de seguridad');
+    toast('Error al exportar copia de seguridad', true);
   }
 }
 
@@ -568,7 +689,7 @@ async function importBackup(e) {
     const backupData = JSON.parse(fileContent);
     
     if (!backupData || typeof backupData !== 'object' || !Array.isArray(backupData.audits)) {
-      toast('Archivo de copia de seguridad no válido');
+      toast('Archivo de copia de seguridad no válido', true);
       return;
     }
     
@@ -585,8 +706,13 @@ async function importBackup(e) {
     let importedCount = 0;
     for (const audit of auditsToImport) {
       if (audit.id && audit.data) {
-        await dbPut(audit);
-        importedCount++;
+        try {
+          await dbPut(audit);
+          importedCount++;
+        } catch(err) {
+          // Si peta a mitad por cuota, paramos y avisamos.
+          break;
+        }
       }
     }
     
@@ -595,7 +721,7 @@ async function importBackup(e) {
     await refreshHistoryCount();
   } catch (err) {
     console.error(err);
-    toast('Error al importar el archivo JSON');
+    toast('Error al importar el archivo JSON', true);
   }
 }
 
@@ -905,16 +1031,15 @@ function bindUI(){
   $('#btn-pdf-modal').addEventListener('click', () => { closeModal('modal-summary'); generatePDF(); });
   $('#btn-clear-sig').addEventListener('click', clearSignature);
 
-  // sync de cabecera en cada cambio con autoguardado debounced
-  ['f-hotel','f-hotel-otro','f-auditor','f-date','f-start','f-end','f-rooms','f-plan'].forEach(id => {
-    document.addEventListener('input', e => {
-      if(e.target.id === id) {
-        if(id === 'f-plan') {
-          autoGrowTextarea(e.target);
-        }
-        triggerAutosave();
-      }
-    });
+  // sync de cabecera en cada cambio con autoguardado debounced.
+  // Un solo listener delegado en document; comprobamos si el target es de los campos vigilados.
+  const watchedIds = new Set(['f-hotel','f-hotel-otro','f-auditor','f-date','f-start','f-end','f-rooms','f-plan']);
+  document.addEventListener('input', e => {
+    if (!watchedIds.has(e.target.id)) return;
+    if (e.target.id === 'f-plan') {
+      autoGrowTextarea(e.target);
+    }
+    triggerAutosave();
   });
 
   // Control del selector de hotel
@@ -971,37 +1096,125 @@ function bindUI(){
     btnImport.addEventListener('click', () => inputImport.click());
     inputImport.addEventListener('change', importBackup);
   }
+
+  // Botón "Cambiar PIN" en la vista de info
+  const btnChangePin = $('#btn-change-pin');
+  if (btnChangePin) {
+    btnChangePin.addEventListener('click', () => {
+      if (confirm('Vas a cambiar el PIN. Tendrás que confirmar el actual y crear uno nuevo. ¿Continuar?')) {
+        startChangePinFlow();
+      }
+    });
+  }
 }
 
 
-/* --------------------- Autenticación (PIN de 4 dígitos) --------------------- */
-// Hash SHA-256 para el PIN "2026" con sal fija.
+/* --------------------- Autenticación (PIN configurable con PBKDF2) ---------------------
+   ----------------------------------------------------------------------------------------
+   La primera vez que se abre la app, la usuaria crea su propio PIN.
+   El hash se guarda en localStorage con una sal aleatoria de 16 bytes.
+   Derivación con PBKDF2-SHA256 a 250 000 iteraciones — esto hace que un
+   ataque por fuerza bruta sobre los 10 000 PINs posibles tarde varios
+   minutos por intento incluso teniendo el JS público, en lugar de
+   milisegundos como con un SHA-256 simple.
+   ---------------------------------------------------------------------------------------- */
 const AUTH = {
-  SALT: 'cor-audit-2026-bilbao',
-  HASH: '2d0e9f125e969f9fc8dd618fcca8136f208a8f72b65b8fb76c62a1e7a7f88e1f',
-  KEY:  'cor_audit_session_token' // Obfuscado y guardado temporalmente en sessionStorage
+  STORE_KEY: 'cor_audit_pin_v2',          // { salt, hash, iter, createdAt } en localStorage
+  SESSION_KEY: 'cor_audit_session_token', // sessionStorage (sesión de 12h)
+  PBKDF2_ITERATIONS: 250000
 };
 
-async function sha256(text){
-  const buf = new TextEncoder().encode(text);
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+// Convertir Uint8Array a hex y viceversa.
+function bufToHex(buf){
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function hexToBuf(hex){
+  const arr = new Uint8Array(hex.length/2);
+  for (let i=0; i<arr.length; i++) arr[i] = parseInt(hex.substr(i*2,2),16);
+  return arr;
 }
 
-async function tryAuth(pin){
-  const h = await sha256(AUTH.SALT + pin);
-  return h === AUTH.HASH;
+// Derivar hash a partir de un PIN y una sal usando PBKDF2-SHA256.
+async function derivePin(pin, saltHex, iterations){
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(pin),
+    { name: 'PBKDF2' }, false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: hexToBuf(saltHex),
+      iterations: iterations,
+      hash: 'SHA-256'
+    },
+    key,
+    256
+  );
+  return bufToHex(bits);
+}
+
+// ¿Hay un PIN guardado en este dispositivo?
+function hasPinConfigured(){
+  try {
+    const raw = localStorage.getItem(AUTH.STORE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return !!(parsed && parsed.salt && parsed.hash);
+  } catch(_) { return false; }
+}
+
+// Guardar un PIN nuevo. Genera sal aleatoria.
+async function setupNewPin(pin){
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const saltHex = bufToHex(saltBytes);
+  const hash = await derivePin(pin, saltHex, AUTH.PBKDF2_ITERATIONS);
+  localStorage.setItem(AUTH.STORE_KEY, JSON.stringify({
+    salt: saltHex,
+    hash: hash,
+    iter: AUTH.PBKDF2_ITERATIONS,
+    createdAt: Date.now()
+  }));
+}
+
+// Comprobar si un PIN coincide con el guardado.
+async function verifyPin(pin){
+  try {
+    const raw = localStorage.getItem(AUTH.STORE_KEY);
+    if (!raw) return false;
+    const stored = JSON.parse(raw);
+    if (!stored.salt || !stored.hash) return false;
+    const iter = stored.iter || AUTH.PBKDF2_ITERATIONS;
+    const candidate = await derivePin(pin, stored.salt, iter);
+    // Comparación de tiempo constante para evitar timing attacks.
+    if (candidate.length !== stored.hash.length) return false;
+    let diff = 0;
+    for (let i=0; i<candidate.length; i++) {
+      diff |= candidate.charCodeAt(i) ^ stored.hash.charCodeAt(i);
+    }
+    return diff === 0;
+  } catch(_) {
+    return false;
+  }
+}
+
+// Borrar la configuración de PIN (para "olvidé el PIN" o cambiar PIN).
+function clearPinConfig(){
+  localStorage.removeItem(AUTH.STORE_KEY);
+  sessionStorage.removeItem(AUTH.SESSION_KEY);
 }
 
 function isAuthed(){
-  const token = sessionStorage.getItem(AUTH.KEY);
+  const token = sessionStorage.getItem(AUTH.SESSION_KEY);
   if (!token) return false;
   
-  // Validar formato y expiración de 12 horas del token de sesión
+  // Validar formato y expiración de 12 horas del token de sesión.
+  // Nota: este token solo protege contra "se me olvidó cerrar sesión y pasaron 12h";
+  // la verdadera barrera es el PIN PBKDF2.
   try {
     const parsed = JSON.parse(atob(token));
     if (parsed.expiry < Date.now()) {
-      sessionStorage.removeItem(AUTH.KEY);
+      sessionStorage.removeItem(AUTH.SESSION_KEY);
       return false;
     }
     return true;
@@ -1011,19 +1224,33 @@ function isAuthed(){
 }
 
 function setAuthed(){
-  // Crear un token temporal firmado por base64
   const sessionData = {
     expiry: Date.now() + 12 * 60 * 60 * 1000, // 12 horas
     random: Math.random().toString(36).substring(2)
   };
   const token = btoa(JSON.stringify(sessionData));
-  sessionStorage.setItem(AUTH.KEY, token);
+  sessionStorage.setItem(AUTH.SESSION_KEY, token);
 }
 
 function logout(){
-  sessionStorage.removeItem(AUTH.KEY);
+  sessionStorage.removeItem(AUTH.SESSION_KEY);
   showLock();
 }
+
+/* --------------------- PIN Pad: estado y flujo ---------------------
+   El pad de PIN sirve para 3 flujos distintos:
+   - 'unlock'    : usuaria ya tiene PIN, lo está introduciendo
+   - 'setup'     : primer arranque o "olvidé PIN", está creando uno
+                   (dos pasos: PIN nuevo + confirmación)
+   - 'change'    : cambiar PIN existente
+                   (tres pasos: PIN actual + PIN nuevo + confirmación)
+   ------------------------------------------------------------------ */
+const pinFlow = {
+  mode: 'unlock',
+  step: 'enter',          // 'enter' | 'confirm' | 'verify_current' | 'new' | 'confirm_new'
+  firstAttempt: '',       // primera entrada (para luego confirmar)
+  failedAttempts: 0
+};
 
 let enteredPin = "";
 
@@ -1038,50 +1265,200 @@ function updatePinDots() {
   });
 }
 
+function setLockTitle(title, subtitle){
+  const tEl = document.getElementById('lock-title');
+  const sEl = document.getElementById('lock-subtitle');
+  if (tEl) tEl.textContent = title;
+  if (sEl) sEl.textContent = subtitle;
+}
+
+function setLockError(msg){
+  const err = document.getElementById('lock-error');
+  if (err) err.textContent = msg || '\u00A0';
+}
+
+function showLockShake(){
+  const lockSection = document.getElementById('view-lock');
+  if (lockSection) {
+    lockSection.classList.add('shake-anim');
+    setTimeout(() => lockSection.classList.remove('shake-anim'), 300);
+  }
+}
+
+// Reinicia el pad: limpia entrada y dots.
+function resetPinInput(){
+  enteredPin = '';
+  updatePinDots();
+}
+
+// Entra en modo "introducir PIN para desbloquear".
+function startUnlockFlow(){
+  pinFlow.mode = 'unlock';
+  pinFlow.step = 'enter';
+  pinFlow.firstAttempt = '';
+  pinFlow.failedAttempts = 0;
+  resetPinInput();
+  setLockTitle('Auditoría Cor Outsourcing', 'Introduce tu PIN de 4 dígitos');
+  setLockError('');
+  updateForgotPinVisibility();
+}
+
+// Entra en modo "crear PIN nuevo" (primer arranque o tras 'olvidé PIN').
+function startSetupFlow(){
+  pinFlow.mode = 'setup';
+  pinFlow.step = 'enter';
+  pinFlow.firstAttempt = '';
+  pinFlow.failedAttempts = 0;
+  resetPinInput();
+  setLockTitle('Crea tu PIN', 'Elige un PIN de 4 dígitos. Lo necesitarás cada vez que abras la app.');
+  setLockError('');
+  updateForgotPinVisibility();
+}
+
+// Entra en modo "cambiar PIN" (desde la pantalla de info).
+function startChangePinFlow(){
+  pinFlow.mode = 'change';
+  pinFlow.step = 'verify_current';
+  pinFlow.firstAttempt = '';
+  pinFlow.failedAttempts = 0;
+  resetPinInput();
+  setLockTitle('Cambiar PIN', 'Introduce tu PIN actual');
+  setLockError('');
+  showLock(false); // mostrar el lock sin resetear el modo
+  updateForgotPinVisibility();
+}
+
+// Mostrar/ocultar el enlace "Olvidé mi PIN" según el flujo.
+function updateForgotPinVisibility(){
+  const link = document.getElementById('forgot-pin-link');
+  if (!link) return;
+  // Solo tiene sentido en modo 'unlock'.
+  link.style.display = (pinFlow.mode === 'unlock') ? '' : 'none';
+}
+
 async function pressPinKey(val) {
   if (enteredPin.length >= 4) return;
   enteredPin += val;
   updatePinDots();
   
   if (enteredPin.length === 4) {
-    const ok = await tryAuth(enteredPin);
+    await processPin();
+  }
+}
+
+async function processPin(){
+  const pin = enteredPin;
+
+  if (pinFlow.mode === 'unlock') {
+    const ok = await verifyPin(pin);
     if (ok) {
       setAuthed();
-      const err = document.getElementById('lock-error');
-      if (err) err.innerHTML = '&nbsp;';
+      setLockError('');
       hideLock();
-      enteredPin = "";
-      updatePinDots();
+      resetPinInput();
+      pinFlow.failedAttempts = 0;
     } else {
-      const err = document.getElementById('lock-error');
-      if (err) err.textContent = 'PIN incorrecto';
-      enteredPin = "";
-      updatePinDots();
-      
-      const lockSection = document.getElementById('view-lock');
-      if (lockSection) {
-        lockSection.classList.add('shake-anim');
+      pinFlow.failedAttempts++;
+      setLockError(pinFlow.failedAttempts >= 3
+        ? 'PIN incorrecto. ¿Olvidaste tu PIN?'
+        : 'PIN incorrecto');
+      resetPinInput();
+      showLockShake();
+    }
+    return;
+  }
+
+  if (pinFlow.mode === 'setup') {
+    if (pinFlow.step === 'enter') {
+      pinFlow.firstAttempt = pin;
+      pinFlow.step = 'confirm';
+      setLockTitle('Confirma tu PIN', 'Vuelve a introducirlo para confirmar');
+      setLockError('');
+      resetPinInput();
+    } else if (pinFlow.step === 'confirm') {
+      if (pin === pinFlow.firstAttempt) {
+        await setupNewPin(pin);
+        setAuthed();
+        setLockError('');
+        hideLock();
+        resetPinInput();
+        toast('PIN configurado correctamente');
+      } else {
+        setLockError('Los PINs no coinciden. Empieza de nuevo.');
+        showLockShake();
+        // Volver al paso 'enter' para que vuelva a teclear desde el principio.
+        pinFlow.step = 'enter';
+        pinFlow.firstAttempt = '';
+        resetPinInput();
         setTimeout(() => {
-          lockSection.classList.remove('shake-anim');
-        }, 300);
+          setLockTitle('Crea tu PIN', 'Elige un PIN de 4 dígitos. Lo necesitarás cada vez que abras la app.');
+        }, 1500);
+      }
+    }
+    return;
+  }
+
+  if (pinFlow.mode === 'change') {
+    if (pinFlow.step === 'verify_current') {
+      const ok = await verifyPin(pin);
+      if (ok) {
+        pinFlow.step = 'new';
+        setLockTitle('Nuevo PIN', 'Elige tu nuevo PIN de 4 dígitos');
+        setLockError('');
+        resetPinInput();
+      } else {
+        setLockError('PIN actual incorrecto');
+        showLockShake();
+        resetPinInput();
+      }
+    } else if (pinFlow.step === 'new') {
+      pinFlow.firstAttempt = pin;
+      pinFlow.step = 'confirm_new';
+      setLockTitle('Confirma el PIN', 'Repite el nuevo PIN');
+      setLockError('');
+      resetPinInput();
+    } else if (pinFlow.step === 'confirm_new') {
+      if (pin === pinFlow.firstAttempt) {
+        await setupNewPin(pin);
+        setAuthed();
+        setLockError('');
+        hideLock();
+        resetPinInput();
+        toast('PIN cambiado correctamente');
+      } else {
+        setLockError('Los PINs no coinciden');
+        showLockShake();
+        pinFlow.step = 'new';
+        pinFlow.firstAttempt = '';
+        resetPinInput();
+        setTimeout(() => {
+          setLockTitle('Nuevo PIN', 'Elige tu nuevo PIN de 4 dígitos');
+        }, 1500);
       }
     }
   }
 }
 
 function clearPin() {
-  enteredPin = "";
-  updatePinDots();
-  const err = document.getElementById('lock-error');
-  if (err) err.innerHTML = '&nbsp;';
+  resetPinInput();
+  setLockError('');
 }
 
 function backspacePin() {
   if (enteredPin.length > 0) {
     enteredPin = enteredPin.slice(0, -1);
     updatePinDots();
-    const err = document.getElementById('lock-error');
-    if (err) err.innerHTML = '&nbsp;';
+    setLockError('');
+  }
+}
+
+// "Olvidé mi PIN": confirma con la usuaria y borra la config (sin tocar IndexedDB).
+function handleForgotPin(){
+  const msg = '¿Olvidaste tu PIN?\n\nSi continúas, podrás crear uno nuevo. '
+            + 'Tus auditorías guardadas NO se borrarán.\n\n¿Continuar?';
+  if (confirm(msg)) {
+    clearPinConfig();
+    startSetupFlow();
   }
 }
 
@@ -1106,12 +1483,19 @@ function closeLightbox() {
   }, 200);
 }
 
-function showLock(){
+// resetMode: si es true, decide automáticamente entre setup o unlock según haya PIN.
+// si es false, respeta el modo actual (lo usamos para "cambiar PIN").
+function showLock(resetMode = true){
   document.getElementById('view-lock').style.display = 'flex';
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
-  enteredPin = "";
-  updatePinDots();
+  if (resetMode) {
+    if (hasPinConfigured()) {
+      startUnlockFlow();
+    } else {
+      startSetupFlow();
+    }
+  }
 }
 
 function hideLock(){
@@ -1140,29 +1524,89 @@ function bindLock(){
     }
   });
 
-  // Admitir entrada física para facilitar pruebas y uso en PC
+  // Enlace "olvidé mi PIN"
+  const forgotLink = document.getElementById('forgot-pin-link');
+  if (forgotLink) {
+    forgotLink.addEventListener('click', e => {
+      e.preventDefault();
+      handleForgotPin();
+    });
+  }
+
+  // Admitir entrada física para facilitar pruebas y uso en PC.
+  // Usamos un flag de estado en lugar de inspeccionar el DOM (más fiable).
   document.addEventListener('keydown', e => {
     const lockView = document.getElementById('view-lock');
-    if (lockView && lockView.style.display !== 'none') {
-      if (e.key >= '0' && e.key <= '9') {
-        pressPinKey(e.key);
-      } else if (e.key === 'Backspace') {
-        backspacePin();
-      } else if (e.key === 'Escape' || e.key === 'Delete') {
-        clearPin();
-      }
+    if (!lockView || lockView.style.display === 'none') return;
+    if (e.key >= '0' && e.key <= '9') {
+      pressPinKey(e.key);
+    } else if (e.key === 'Backspace') {
+      backspacePin();
+    } else if (e.key === 'Escape' || e.key === 'Delete') {
+      clearPin();
     }
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+/* --------------------- Detección de versión nueva del Service Worker --------------------- */
+function bindServiceWorkerUpdates(){
+  if (!('serviceWorker' in navigator)) return;
+  
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'SW_UPDATED') {
+      // Solo avisamos si ya había una versión antes (es decir, esto no es la primera carga).
+      // Para distinguirlo, usamos sessionStorage.
+      if (sessionStorage.getItem('sw_was_loaded')) {
+        showUpdateAvailable();
+      }
+      sessionStorage.setItem('sw_was_loaded', '1');
+    }
+  });
+  
+  // Marcar que el SW ya estaba activo en esta sesión.
+  if (navigator.serviceWorker.controller) {
+    sessionStorage.setItem('sw_was_loaded', '1');
+  }
+}
+
+function showUpdateAvailable(){
+  // Banner discreto en la parte superior. Si ya existe, no duplicar.
+  if (document.getElementById('update-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.style.cssText = `
+    position:fixed; top:0; left:0; right:0; z-index:200;
+    background:#1f9d55; color:#fff; padding:10px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:13px; font-weight:600;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+    padding-top: calc(10px + env(safe-area-inset-top));
+  `;
+  banner.innerHTML = `
+    <span>✨ Hay una versión nueva disponible</span>
+    <button style="background:#fff;color:#1f9d55;border:0;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;">Recargar</button>
+  `;
+  banner.querySelector('button').onclick = () => {
+    location.reload();
+  };
+  document.body.appendChild(banner);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Pedir almacenamiento persistente cuanto antes.
+  requestPersistentStorage();
+  
   bindLock();
-  if(isAuthed()){
+  bindUI();
+  bindServiceWorkerUpdates();
+  
+  // Decidir si mostrar lock o desbloquear directamente.
+  if(isAuthed() && hasPinConfigured()){
     hideLock();
   } else {
-    showLock();
+    showLock(true); // resetMode=true → decide entre setup/unlock
   }
-  bindUI();
+  
   refreshHistoryCount();
 
   const lo = document.getElementById('btn-logout');
