@@ -488,8 +488,23 @@ async function renderHistory(){
         <div class="date">${d.date || '(sin fecha)'} · ${d.hotel}</div>
         <div class="meta">${d.auditor} · ✓ ${si} ✗ ${no} N/A ${na} · ${si+no+na}/${total} completados</div>
       </div>
-      <div class="badge">Abrir</div>`;
+      <div class="badge">Abrir</div>
+      <button class="delete-btn" title="Borrar auditoría">🗑️</button>`;
     el.onclick = () => loadAudit(a.id);
+    
+    const delBtn = el.querySelector('.delete-btn');
+    delBtn.onclick = async (e) => {
+      e.stopPropagation();
+      const hotelName = d.hotel || '(sin hotel)';
+      const auditDate = d.date || '(sin fecha)';
+      if(confirm(`¿Estás seguro de que deseas borrar la auditoría de "${hotelName}" del ${auditDate}?`)){
+        await dbDel(a.id);
+        toast('Auditoría eliminada');
+        renderHistory();
+        refreshHistoryCount();
+      }
+    };
+    
     cont.appendChild(el);
   });
 }
