@@ -150,6 +150,11 @@ function goView(name){
   $('#hdr-sub').textContent   = t.sub;
   $('#btn-back').style.display = t.back ? '' : 'none';
   window.scrollTo({ top:0, behavior:'instant' });
+  if (name === 'audit') {
+    setTimeout(() => {
+      $$('textarea.auto-grow').forEach(ta => autoGrowTextarea(ta));
+    }, 50);
+  }
 }
 
 /* --------------------- Toast --------------------- */
@@ -260,7 +265,7 @@ function renderForm(){
           <label class="no"><input type="radio" name="${it.id}" value="no" ${v.val==='no'?'checked':''}>✗ NO</label>
           <label class="na"><input type="radio" name="${it.id}" value="na" ${v.val==='na'?'checked':''}>N/A</label>
         </div>
-        <div class="obs"><textarea placeholder="Observaciones / acciones...">${escapeHtml(v.obs)}</textarea></div>
+        <div class="obs"><textarea class="auto-grow" placeholder="Observaciones / acciones...">${escapeHtml(v.obs)}</textarea></div>
         <div class="photos">
           ${v.photos.map((src,i)=>`<div class="photo"><img src="${src}" data-pidx="${i}"><button type="button" data-rm="${i}">×</button></div>`).join('')}
           <label class="addphoto" title="Añadir foto">+<input type="file" accept="image/*" capture="environment"></label>
@@ -277,6 +282,7 @@ function renderForm(){
       });
       wrap.querySelector('textarea').addEventListener('input', e => { 
         v.obs = e.target.value; 
+        autoGrowTextarea(e.target);
         triggerAutosave(); // Guardado debounced al escribir
       });
       wrap.querySelector('input[type=file]').addEventListener('change', async e => {
@@ -305,8 +311,18 @@ function renderForm(){
   });
 
   // firma — restaurar si existía
-  setTimeout(()=>{ initSignature(); if(state.data.signature){ drawSignatureFromData(state.data.signature); } }, 50);
+  setTimeout(()=>{ 
+    initSignature(); 
+    if(state.data.signature){ drawSignatureFromData(state.data.signature); } 
+    $$('textarea.auto-grow').forEach(ta => autoGrowTextarea(ta));
+  }, 100);
   updateStats();
+}
+
+function autoGrowTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -652,7 +668,22 @@ async function generatePDF(){
       const txt = it.t.replace(/<[^>]+>/g,'');
       doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
       const split = doc.splitTextToSize(txt, W - 2*M - 22);
-      const hRow = Math.max(6, split.length*4.4 + 1) + (v.obs ? 4 + doc.splitTextToSize(v.obs, W-2*M-6).length*3.8 : 0);
+      
+      // Calcular la altura requerida para la fila
+      let hRow = Math.max(6, split.length*4.4 + 1);
+      if(v.obs){
+        hRow += 4 + doc.splitTextToSize(v.obs, W-2*M-6).length*3.8;
+      }
+      
+      const photoW = 45;
+      const photoH = 34;
+      const gap = 4;
+      
+      if(v.photos && v.photos.length > 0){
+        const rowsCount = Math.ceil(v.photos.length / 3);
+        hRow += 2 + rowsCount * (photoH + gap);
+      }
+      
       ensure(hRow + 2);
 
       // estado visual
@@ -678,7 +709,32 @@ async function generatePDF(){
         cursor += obsSplit.length*3.8 + 1.5;
         doc.setTextColor(DARK); doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
       }
-      // fotos: si las hay, las anexamos al final del PDF para no romper la maquetación
+      
+      // Fotos en línea
+      if(v.photos && v.photos.length > 0){
+        let row = 0;
+        let col = 0;
+        const startX = M + 7;
+        
+        v.photos.forEach((src) => {
+          if(col >= 3){
+            col = 0;
+            row++;
+          }
+          const px = startX + col * (photoW + gap);
+          const py = cursor + 2 + row * (photoH + gap);
+          try {
+            doc.addImage(src, 'JPEG', px, py, photoW, photoH);
+          } catch(e) {
+            console.error("Error al añadir foto en línea:", e);
+          }
+          col++;
+        });
+        
+        const rowsCount = row + 1;
+        cursor += 2 + rowsCount * (photoH + gap);
+      }
+      
       y = cursor + 2;
       doc.setDrawColor('#EEE'); doc.line(M, y, W-M, y); y += 1.5;
     }
@@ -686,18 +742,82 @@ async function generatePDF(){
   }
 
   // Plan de acción
-  ensure(60);
+  ensure(25);
   doc.setFillColor(COR); doc.rect(M, y, W-2*M, 7, 'F');
   doc.setTextColor('#FFF'); doc.setFont('helvetica','bold'); doc.setFontSize(10);
   doc.text('PLAN DE ACCIÓN / PUNTOS DE MEJORA DETECTADOS', M+2, y+5);
   doc.setTextColor(DARK); y += 9;
-  doc.setDrawColor(BORDER); doc.rect(M, y, W-2*M, 70);
-  if(state.data.plan){
-    doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
-    const plan = doc.splitTextToSize(state.data.plan, W-2*M-4);
-    doc.text(plan, M+2, y+5);
+
+  // Dibujar cuadro y texto dinámicamente
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  const planText = state.data.plan || '';
+  const planLines = planText ? doc.splitTextToSize(planText, W-2*M-6) : []; // Margen de 3mm a cada lado
+  
+  const lineHeight = 4.8;
+  const boxPaddingTop = 4;
+  const boxPaddingBottom = 4;
+  
+  const requiredTextHeight = planLines.length * lineHeight;
+  const totalRequiredHeight = Math.max(30, requiredTextHeight + boxPaddingTop + boxPaddingBottom);
+  
+  // ¿Cabe en la página actual?
+  if (y + totalRequiredHeight <= H - 18) {
+    // Cabe perfectamente en la página actual
+    doc.setDrawColor(BORDER);
+    doc.rect(M, y, W-2*M, totalRequiredHeight);
+    if (planLines.length > 0) {
+      doc.text(planLines, M+3, y + boxPaddingTop + 3);
+    }
+    y += totalRequiredHeight;
+  } else {
+    // No cabe en la página actual. Paginamos el texto y los cuadros.
+    let currentLine = 0;
+    let isFirstPageOfPlan = true;
+    
+    while (currentLine < planLines.length || isFirstPageOfPlan) {
+      const remainingHeight = (H - 18) - y;
+      
+      // Si nos queda muy poco espacio en la página actual (menos de 15mm), pasamos a la siguiente
+      if (remainingHeight < 15) {
+        footer();
+        doc.addPage();
+        y = 14;
+        header();
+        continue;
+      }
+      
+      // Calcular cuántas líneas caben en el espacio restante
+      let maxLines = Math.floor((remainingHeight - boxPaddingTop - boxPaddingBottom) / lineHeight);
+      if (maxLines < 1) maxLines = 1;
+      
+      const linesToShow = planLines.slice(currentLine, currentLine + maxLines);
+      const actualLinesCount = linesToShow.length;
+      
+      // Altura del cuadro para esta página
+      let boxHeight = (actualLinesCount * lineHeight) + boxPaddingTop + boxPaddingBottom;
+      if (isFirstPageOfPlan && planLines.length === 0) {
+        boxHeight = Math.max(30, boxHeight);
+      }
+      
+      doc.setDrawColor(BORDER);
+      doc.rect(M, y, W-2*M, boxHeight);
+      
+      if (actualLinesCount > 0) {
+        doc.text(linesToShow, M+3, y + boxPaddingTop + 3);
+      }
+      
+      y += boxHeight;
+      currentLine += actualLinesCount;
+      isFirstPageOfPlan = false;
+      
+      if (currentLine < planLines.length) {
+        footer();
+        doc.addPage();
+        y = 14;
+        header();
+      }
+    }
   }
-  y += 74;
 
   // Firma
   ensure(40);
@@ -709,39 +829,7 @@ async function generatePDF(){
   }
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
   doc.text(state.data.auditor || 'María José Pozuelo', M, y+29);
-
-  // Anexo de fotos
-  const fotos = [];
-  CHECKLIST.forEach(sec => sec.items.forEach(it => {
-    const v = state.data.items[it.id];
-    if(v && v.photos && v.photos.length){
-      v.photos.forEach((src,idx) => fotos.push({ sec:sec.title, item:it.t.replace(/<[^>]+>/g,''), src, idx }));
-    }
-  }));
-  if(fotos.length){
-    doc.addPage(); y = 14; header();
-    doc.setFillColor(COR); doc.rect(M, y, W-2*M, 7, 'F');
-    doc.setTextColor('#FFF'); doc.setFont('helvetica','bold'); doc.setFontSize(10);
-    doc.text('ANEXO FOTOGRÁFICO', M+2, y+5);
-    doc.setTextColor(DARK); y += 11;
-
-    const photoW = (W - 2*M - 8) / 2;
-    const photoH = photoW * 0.75;
-    let col = 0;
-    for(const f of fotos){
-      if(y + photoH + 14 > H - 18){ footer(); doc.addPage(); y = 14; header(); col = 0; }
-      const x = M + col * (photoW + 8);
-      try { doc.addImage(f.src, 'JPEG', x, y, photoW, photoH); } catch(e){}
-      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(COR);
-      doc.text(f.sec, x, y + photoH + 3.5);
-      doc.setFont('helvetica','normal'); doc.setTextColor(DARK);
-      const split = doc.splitTextToSize(f.item, photoW);
-      doc.text(split, x, y + photoH + 7);
-      col++;
-      if(col >= 2){ col = 0; y += photoH + 14 + (split.length-1)*3.5; }
-    }
-  }
-
+  
   // pies de página en todas
   const pages = doc.internal.getNumberOfPages();
   for(let p=1;p<=pages;p++){ doc.setPage(p); footer(); }
@@ -775,6 +863,9 @@ function bindUI(){
   ['f-hotel','f-auditor','f-date','f-start','f-end','f-rooms','f-plan'].forEach(id => {
     document.addEventListener('input', e => {
       if(e.target.id === id) {
+        if(id === 'f-plan') {
+          autoGrowTextarea(e.target);
+        }
         triggerAutosave();
       }
     });

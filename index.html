@@ -242,6 +242,12 @@
     color: #fff;
     background: rgba(255, 255, 255, 0.25);
   }
+  
+  /* Textareas que crecen dinámicamente */
+  textarea.auto-grow {
+    resize: none;
+    overflow-y: hidden;
+  }
 </style>
 </head>
 <body>
@@ -362,7 +368,7 @@
 
   <div class="card">
     <h2><span class="num">★</span>Plan de Acción / Puntos de Mejora</h2>
-    <textarea id="f-plan" placeholder="Anota aquí las acciones correctivas, observaciones generales y áreas detectadas para mejora..." style="min-height:120px"></textarea>
+    <textarea id="f-plan" class="auto-grow" placeholder="Anota aquí las acciones correctivas, observaciones generales y áreas detectadas para mejora..." style="min-height:120px"></textarea>
   </div>
 
   <div class="card">
