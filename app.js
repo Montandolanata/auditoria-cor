@@ -425,12 +425,38 @@ function renderForm(){
   });
 
   // firma — restaurar si existía
-  setTimeout(()=>{ 
-    initSignature(); 
-    if(state.data.signature){ drawSignatureFromData(state.data.signature); } 
+  // Antes usábamos setTimeout(100) confiando en que el layout estaría pintado.
+  // Eso falla a veces (sobre todo al cargar una auditoría guardada) porque el
+  // canvas todavía tiene tamaño 0 y la firma se dibuja deformada.
+  // Ahora esperamos al siguiente frame y verificamos que el contenedor tenga
+  // ancho > 0 antes de inicializar; si no, esperamos otro frame.
+  initSignatureWhenReady();
+  
+  // Los textareas se ajustan al frame siguiente igualmente.
+  requestAnimationFrame(() => {
     $$('textarea.auto-grow').forEach(ta => autoGrowTextarea(ta));
-  }, 100);
+  });
+  
   updateStats();
+}
+
+// Inicializa la firma cuando el contenedor tenga tamaño. Si el navegador todavía
+// no ha calculado el layout (rect.width === 0) reintenta en el siguiente frame.
+// Damos un máximo de 30 frames (~500ms) para no quedarnos en bucle si algo va mal.
+function initSignatureWhenReady(attempt = 0){
+  const canvas = $('#sig');
+  if (!canvas) return;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) {
+    if (attempt < 30) {
+      requestAnimationFrame(() => initSignatureWhenReady(attempt + 1));
+    }
+    return;
+  }
+  initSignature();
+  if (state.data && state.data.signature) {
+    drawSignatureFromData(state.data.signature);
+  }
 }
 
 function autoGrowTextarea(el) {

@@ -6,9 +6,9 @@
      instante y, en paralelo, descargamos la nueva en segundo plano.
      Así nunca se queda atascado en una versión vieja sin enterarse.
    - cache-first para los assets que casi nunca cambian (iconos,
-     librerías externas con versión fija como jsPDF). Ahorra red.
+     librerías de terceros con versión fija como jsPDF). Ahorra red.
    ------------------------------------------------------------------ */
-const CACHE = 'cor-audit-v6';
+const CACHE = 'cor-audit-v7';
 
 // Archivos "vivos": estrategia stale-while-revalidate.
 const LIVE_ASSETS = [
@@ -19,11 +19,14 @@ const LIVE_ASSETS = [
 ];
 
 // Archivos "fijos": estrategia cache-first.
+// Desde la v1.3 jsPDF se sirve desde el propio repo (./vendor/) en lugar
+// del CDN cdnjs.cloudflare.com. Esto hace la app totalmente autocontenida.
 const STATIC_ASSETS = [
   './icon.svg',
   './icon-192.png',
   './icon-512.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+  './icon-512-maskable.png',
+  './vendor/jspdf.umd.min.js'
 ];
 
 const ALL_ASSETS = [...LIVE_ASSETS, ...STATIC_ASSETS];
