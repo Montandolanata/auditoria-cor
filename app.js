@@ -9,6 +9,10 @@ const CHECKLIST = [
     title: "Rentabilidad y Control de Costes",
     items: [
       { id: "rc_prod", t: "<strong>Productividad:</strong> Habitaciones camareras/os de pisos." },
+      { id: "rc_prod_nomolestar", t: "<strong>Productividad:</strong> ¿Se recuperan los carteles de \"No Molestar\"?" },
+      { id: "rc_prod_recuperar", t: "<strong>Productividad:</strong> ¿Acepta el personal recuperar habitaciones?" },
+      { id: "rc_prod_subir_ratios", t: "<strong>Productividad:</strong> ¿Permite el hotel subir ratios para recuperar carteles de \"No Molestar\"?" },
+      { id: "rc_prod_muchas_salidas", t: "<strong>Productividad:</strong> ¿Es un hotel con muchas salidas habitualmente?" },
       { id: "rc_dosi", t: "<strong>Dosificadores químicos:</strong> dosificación correcta." },
       { id: "rc_cons_uni", t: "<strong>Otros consumos:</strong> Uniformidad." },
       { id: "rc_cons_calz", t: "<strong>Otros consumos:</strong> Calzado." },
@@ -31,7 +35,11 @@ const CHECKLIST = [
       { id: "rc_liq_do", t: "<strong>Liquidaciones:</strong> Despido Objetivo (DO)." },
       { id: "rc_liq_di", t: "<strong>Liquidaciones:</strong> Despido Improcedente (DI)." },
       { id: "rc_liq_dp", t: "<strong>Liquidaciones:</strong> Despido Procedente (DP)." },
-      { id: "rc_liq_d", t: "<strong>Liquidaciones:</strong> Discontinuidades (D)." }
+      { id: "rc_liq_d", t: "<strong>Liquidaciones:</strong> Discontinuidades (D)." },
+      { id: "rc_form_realiza", t: "<strong>Formación:</strong> ¿Se realizan formaciones al personal nuevo?" },
+      { id: "rc_form_dias", t: "<strong>Formación:</strong> ¿Cuántos días de formación se ofrecen? <em>(anotar la cantidad en observaciones)</em>" },
+      { id: "rc_form_ratio_obligado", t: "<strong>Formación:</strong> ¿Los días de formación tienen ratio que cumplir?" },
+      { id: "rc_form_ratio_exigido", t: "<strong>Formación:</strong> ¿Qué ratio/productividad se exige durante la formación? <em>(anotar la cifra en observaciones)</em>" }
     ]
   },
   {
