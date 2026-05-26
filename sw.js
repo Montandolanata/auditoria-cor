@@ -8,18 +8,20 @@
    - cache-first para los assets que casi nunca cambian (iconos,
      librerías de terceros con versión fija como jsPDF). Ahorra red.
    ------------------------------------------------------------------
-   IMPORTANTE — banner de "versión nueva disponible":
-   Para que aparezca el banner verde en los móviles tras cada release,
-   este archivo (sw.js) DEBE cambiar de contenido en cada despliegue.
-   Si solo cambia app.js o index.html y no se toca sw.js, el navegador
-   no detecta un Service Worker nuevo y no se avisa al usuario.
+   NOTA sobre el banner de "versión nueva disponible":
+   La detección de versión nueva la lleva app.js (ver
+   checkForVersionUpdate). Compara la versión del index.html servido
+   por la red con la del DOM cargado. Esto desacopla el banner del
+   ciclo de vida del Service Worker, así que basta con cambiar la
+   versión en UN solo sitio (el footer de index.html) — no hace falta
+   tocar sw.js en cada release.
 
-   Por eso APP_VERSION va aquí: subir este número en cada release es
-   suficiente para que sw.js cuente como "nuevo" y se dispare el banner.
-   Mantener APP_VERSION en sincronía con la versión del footer de la
-   home (index.html).
+   sw.js solo es responsable de cachear los assets y de servir contenido
+   offline. El nombre de la caché va atado a APP_VERSION; la cambiamos
+   solo cuando hay un cambio en el propio sw.js (por ejemplo, nuevos
+   assets a cachear o cambios en la estrategia).
    ------------------------------------------------------------------ */
-const APP_VERSION = 'v1.4';
+const APP_VERSION = 'v1.4.1';
 const CACHE = 'cor-audit-' + APP_VERSION;
 
 // Archivos "vivos": estrategia stale-while-revalidate.
@@ -129,5 +131,15 @@ self.addEventListener('message', e => {
     if (e.source) {
       e.source.postMessage({ type: 'VERSION', version: APP_VERSION });
     }
+  }
+  // Vaciar las cachés de assets "vivos" (HTML, JS, manifest) para
+  // forzar que la próxima carga los baje de red. Se usa cuando el
+  // cliente detecta versión nueva y pulsa "Recargar".
+  if (e.data && e.data.type === 'CLEAR_LIVE_CACHE') {
+    e.waitUntil(
+      caches.open(CACHE).then(cache => {
+        return Promise.all(LIVE_ASSETS.map(url => cache.delete(url)));
+      })
+    );
   }
 });
