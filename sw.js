@@ -7,8 +7,20 @@
      Así nunca se queda atascado en una versión vieja sin enterarse.
    - cache-first para los assets que casi nunca cambian (iconos,
      librerías de terceros con versión fija como jsPDF). Ahorra red.
+   ------------------------------------------------------------------
+   IMPORTANTE — banner de "versión nueva disponible":
+   Para que aparezca el banner verde en los móviles tras cada release,
+   este archivo (sw.js) DEBE cambiar de contenido en cada despliegue.
+   Si solo cambia app.js o index.html y no se toca sw.js, el navegador
+   no detecta un Service Worker nuevo y no se avisa al usuario.
+
+   Por eso APP_VERSION va aquí: subir este número en cada release es
+   suficiente para que sw.js cuente como "nuevo" y se dispare el banner.
+   Mantener APP_VERSION en sincronía con la versión del footer de la
+   home (index.html).
    ------------------------------------------------------------------ */
-const CACHE = 'cor-audit-v7';
+const APP_VERSION = 'v1.4';
+const CACHE = 'cor-audit-' + APP_VERSION;
 
 // Archivos "vivos": estrategia stale-while-revalidate.
 const LIVE_ASSETS = [
@@ -110,5 +122,12 @@ self.addEventListener('fetch', e => {
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  // El cliente puede preguntar qué versión está activa para detectar
+  // actualizaciones que se le hayan podido escapar (red de seguridad).
+  if (e.data && e.data.type === 'GET_VERSION') {
+    if (e.source) {
+      e.source.postMessage({ type: 'VERSION', version: APP_VERSION });
+    }
   }
 });

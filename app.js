@@ -1760,11 +1760,31 @@ function bindServiceWorkerUpdates(){
       }
       sessionStorage.setItem('sw_was_loaded', '1');
     }
+    // Respuesta a GET_VERSION (red de seguridad).
+    if (e.data && e.data.type === 'VERSION') {
+      const current = e.data.version;
+      const lastSeen = localStorage.getItem('app_version_seen');
+      if (lastSeen && lastSeen !== current) {
+        // Hay versión nueva y el evento SW_UPDATED se nos escapó.
+        showUpdateAvailable();
+      }
+      // Guardamos solo si no había nada (primera vez) o si el banner ya
+      // se ha mostrado (lo actualizamos cuando el usuario recargue, en la
+      // siguiente carga este localStorage volverá a coincidir).
+      if (!lastSeen) {
+        localStorage.setItem('app_version_seen', current);
+      }
+    }
   });
   
   // Marcar que el SW ya estaba activo en esta sesión.
   if (navigator.serviceWorker.controller) {
     sessionStorage.setItem('sw_was_loaded', '1');
+    // Red de seguridad: preguntar al SW qué versión está sirviendo,
+    // por si SW_UPDATED se disparó con la pestaña cerrada.
+    try {
+      navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
+    } catch(_) {}
   }
 }
 
@@ -1786,7 +1806,18 @@ function showUpdateAvailable(){
     <button style="background:#fff;color:#1f9d55;border:0;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;">Recargar</button>
   `;
   banner.querySelector('button').onclick = () => {
-    location.reload();
+    // Al recargar, actualizamos la versión vista para no volver a avisar.
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
+        navigator.serviceWorker.addEventListener('message', e => {
+          if (e.data && e.data.type === 'VERSION') {
+            localStorage.setItem('app_version_seen', e.data.version);
+          }
+        }, { once: true });
+      }
+    } catch(_) {}
+    setTimeout(() => location.reload(), 80);
   };
   document.body.appendChild(banner);
 }
